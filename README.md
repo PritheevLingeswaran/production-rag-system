@@ -1,80 +1,297 @@
 # rag-smart-qa
 
-Industry-ready, **strict-grounding** Retrieval-Augmented Generation (RAG) system for PDF/TXT Q&A.
+Industry-ready, strict-grounding Retrieval-Augmented Generation (RAG) system for PDF/TXT question answering.
 
-Core guarantees:
-- answers are generated **only from retrieved chunks**
-- **citations** are mandatory; missing/invalid citations → refusal
-- per-request **confidence** + token/cost accounting
-- evaluation harness for retrieval + answer quality + hallucination rate + calibration
+---
 
-## Run locally
+## 🔒 Core Guarantees
+
+- Answers are generated **only from retrieved document chunks**
+- Citations are mandatory — missing or invalid citations trigger automatic refusal
+- Per-request confidence scoring
+- Token usage and cost tracking
+- Hybrid retrieval (BM25 + Dense embeddings)
+- Full evaluation harness:
+  - Recall@k / Precision@k
+  - Hallucination rate
+  - Confidence calibration
+  - P95 latency
+  - Cost per query
+
+---
+
+## 🏗 Architecture Overview
+
+Hybrid Retrieval Pipeline:
+
+Query  
+→ Dense Retrieval (Chroma / FAISS)  
+→ BM25 Retrieval  
+→ Score Fusion (configurable weight)  
+→ Strict Grounded Prompt  
+→ LLM Generation  
+→ Citation Validation  
+→ Response (Answer + Confidence + Metrics)
+
+---
+
+## 🖥 System Requirements
+
+- Python 3.10+
+- pip
+- Internet (first run downloads embedding model)
+
+Optional:
+- OpenAI API Key (for LLM generation)
+- FAISS (optional backend)
+
+---
+
+# 🚀 Setup (macOS / Linux)
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-make install
+
+pip install -r requirements.txt
 
 cp .env.example .env
-# set OPENAI_API_KEY (or use local embeddings model)
+# Edit .env and set OPENAI_API_KEY
+
+python scripts/ingest_data.py --config configs/dev.yaml
+python scripts/build_index.py --config configs/dev.yaml
+python scripts/run_api.py --config configs/dev.yaml
 ```
 
-Put docs in:
-- `data/raw/documents/`
+Open:
 
-Ingest + index:
-```bash
-make ingest
-make index
+http://localhost:8000/docs
+
+---
+
+# 🚀 Setup (Windows – PowerShell)
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+
+pip install -r requirements.txt
+
+copy .env.example .env
+# Edit .env and set OPENAI_API_KEY
+
+python scripts\ingest_data.py --config configs\dev.yaml
+python scripts\build_index.py --config configs\dev.yaml
+python scripts\run_api.py --config configs\dev.yaml
 ```
 
-Run API:
+Open:
+
+http://localhost:8000/docs
+
+---
+
+# 📂 Add Documents
+
+Place PDF or TXT files inside:
+
+data/raw/documents/
+
+Then re-run:
+
 ```bash
-make run
+python scripts/ingest_data.py --config configs/dev.yaml
+python scripts/build_index.py --config configs/dev.yaml
 ```
 
-Query:
+---
+
+# 🔍 Example Query
+
 ```bash
-curl -s http://localhost:8000/query \
+curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
-  -d '{"query":"What is the warranty period?", "top_k": 6}'
+  -d '{"query":"How many projects are there?", "top_k": 5}'
 ```
 
-## Vector stores
-Default: **Chroma** (easy local persistence + metadata).  
-Optional: **FAISS** (faster, but requires installing `faiss-cpu` and compatible CPU).
+Example response:
+
+```json
+{
+  "answer": "There are 3 projects listed.",
+  "confidence": 0.92,
+  "sources": [
+    {
+      "chunk_id": "chunk_1",
+      "source": "resume.pdf",
+      "page": 1,
+      "score": 0.88,
+      "text": "..."
+    }
+  ],
+  "metrics": {
+    "latency_ms": 123,
+    "tokens_used": 421,
+    "cost_usd": 0.0021
+  }
+}
+```
+
+---
+
+# 🧠 Vector Stores
+
+### Default: Chroma
+- Easy local persistence
+- Metadata filtering
+- Good for local development
+
+### Optional: FAISS
+- Faster dense retrieval
+- CPU-based
 
 To enable FAISS:
-- install `faiss-cpu`
-- set `vector_store.provider: faiss` in `configs/base.yaml`
 
-## Evaluation
-Put gold dataset at `evaluation/datasets/gold.jsonl` and run:
+1. Install:
+
 ```bash
-make eval
+pip install faiss-cpu
 ```
 
-The evaluation report (`docs/evaluation_results.md`) includes:
-- recall@k / precision@k (dense vs hybrid)
-- hallucination rate
-- p95 latency (retrieval, generation, end-to-end) for the local eval run
-- corpus size (chunks, unique sources)
+2. Update config:
 
-## Load test (HTTP)
-To measure p95 latency and throughput under concurrency:
+```yaml
+vector_store:
+  provider: faiss
+```
 
-1) Start the API (`make run`)
-2) In another terminal:
+---
+
+# 📊 Evaluation
+
+Place gold dataset in:
+
+evaluation/datasets/gold.jsonl
+
+Run:
+
 ```bash
-make loadtest
+python scripts/run_eval.py --config configs/dev.yaml
+```
+
+Generates:
+
+docs/evaluation_results.md
+
+Metrics include:
+
+- Recall@k (dense vs hybrid)
+- Precision@k
+- Hallucination rate
+- Confidence calibration
+- P95 latency
+- Corpus size
+
+---
+
+# ⚡ Load Testing
+
+1. Start API:
+
+```bash
+python scripts/run_api.py --config configs/dev.yaml
+```
+
+2. In another terminal:
+
+```bash
+python scripts/load_test.py --config configs/dev.yaml
 ```
 
 Outputs:
-- `docs/load_test_results.md`
-- `docs/load_test_results.json`
 
-See docs:
-- `docs/architecture.md`
-- `docs/decisions.md`
-- `docs/tradeoffs.md`
-- `docs/security.md`
+- docs/load_test_results.md
+- docs/load_test_results.json
+
+Includes:
+
+- P95 latency
+- Throughput
+- Error rate
+- Concurrency handling
+
+---
+
+# 🔐 Environment Configuration
+
+Create `.env` file in project root:
+
+```env
+OPENAI_API_KEY=sk-xxxxxxxxxxxx
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+If using a local OpenAI-compatible server (LM Studio / Ollama), adjust `OPENAI_BASE_URL`.
+
+---
+
+# 📁 Key Directories
+
+```text
+configs/          → YAML configuration
+src/              → Core application code
+evaluation/       → Metrics + benchmarking
+docs/             → Architecture & tradeoffs
+data/             → Raw + processed documents
+```
+
+---
+
+# 🧪 Clean Rebuild (if needed)
+
+Delete:
+
+data/processed/indexes/
+
+Then run:
+
+```bash
+python scripts/ingest_data.py --config configs/dev.yaml
+python scripts/build_index.py --config configs/dev.yaml
+```
+
+---
+
+# 📌 Recommended Repository Name
+
+rag-smart-qa
+
+---
+
+# 🏆 Production Features
+
+- Config-driven architecture
+- Strict grounding enforcement
+- Citation validation
+- Hybrid retrieval
+- Cost tracking
+- Latency monitoring
+- Structured logging
+- Docker-ready
+- Modular and testable design
+
+---
+
+# 📚 Documentation
+
+- docs/architecture.md
+- docs/decisions.md
+- docs/tradeoffs.md
+- docs/security.md
+- docs/evaluation_results.md
+
+---
+
+# 📄 License
+
+MIT
