@@ -1,0 +1,20 @@
+app:
+  environment: dev
+
+api:
+  reload: true
+
+# Dev-friendly defaults:
+# - Use local embeddings to avoid embedding API cost.
+# - Enable hybrid retrieval (BM25 + dense).
+embeddings:
+  provider: sentence_transformers
+  model: all-MiniLM-L6-v2
+  batch_size: 32
+
+retrieval:
+  hybrid:
+    enabled: true
+    dense_weight: 0.65
+    dense_k: 40
+    bm25_k: 200

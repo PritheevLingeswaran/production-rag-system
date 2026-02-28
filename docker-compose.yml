@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    container_name: rag-smart-qa-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+      - ./prompts:/app/prompts

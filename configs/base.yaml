@@ -1,0 +1,100 @@
+app:
+  name: rag-smart-qa
+  environment: dev
+
+paths:
+  data_dir: data
+  raw_dir: data/raw/documents
+  processed_dir: data/processed
+  chunks_dir: data/processed/chunks
+  metadata_dir: data/processed/metadata
+  indexes_dir: data/processed/indexes
+
+ingestion:
+  supported_extensions: [".pdf", ".txt"]
+
+preprocessing:
+  cleaning:
+    normalize_whitespace: true
+    drop_null_bytes: true
+  chunking:
+    strategy: token
+    chunk_size: 800
+    chunk_overlap: 120
+    max_chars_fallback: 4000
+
+embeddings:
+  provider: openai   # openai | sentence_transformers
+  model: text-embedding-3-small
+  batch_size: 64
+  openai:
+    base_url: ${OPENAI_BASE_URL}
+    api_key: ${OPENAI_API_KEY}
+    organization: ${OPENAI_ORG}
+    request_timeout_s: 30
+    max_retries: 3
+    usd_per_1k_tokens: 0.00002
+  sentence_transformers:
+    model_name: all-MiniLM-L6-v2
+
+vector_store:
+  provider: chroma   # chroma | faiss | pinecone
+  top_k: 8
+  faiss:
+    metric: cosine
+    normalize: true
+  chroma:
+    persist_dir: data/processed/indexes/chroma
+    collection_name: rag-smart-qa
+  pinecone:
+    api_key: ${PINECONE_API_KEY}
+    environment: ${PINECONE_ENV}
+    index_name: rag-smart-qa
+
+retrieval:
+  query_rewrite:
+    enabled: true
+    model: gpt-4o-mini
+  hybrid:
+    enabled: false
+    # Candidate set sizes for hybrid retrieval.
+    # bm25_k is over the FULL corpus.
+    bm25_k: 200
+    dense_k: 40
+    # Tunable fusion weight: final = dense_weight*dense + (1-dense_weight)*bm25
+    dense_weight: 0.65
+  rerank:
+    enabled: false
+    model_name: cross-encoder/ms-marco-MiniLM-L-6-v2
+  min_score: 0.20
+
+generation:
+  model: gpt-4o-mini
+  temperature: 0.0
+  max_output_tokens: 700
+  strict_refusal: true
+
+api:
+  host: 0.0.0.0
+  port: 8000
+  cors:
+    allow_origins: ["*"]
+  reload: true
+
+monitoring:
+  prometheus:
+    enabled: true
+    endpoint: /metrics
+
+evaluation:
+  dataset_path: evaluation/datasets/gold.jsonl
+  judge_model: gpt-4o-mini
+  enable_llm_judge: false
+
+load_test:
+  base_url: http://localhost:8000
+  endpoint: /query
+  concurrency: 20
+  total_requests: 200
+  timeout_s: 60
+  use_eval_questions: true

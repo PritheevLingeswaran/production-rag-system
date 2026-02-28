@@ -1,0 +1,9 @@
+Refuse when:
+- No retrieved chunks meet the minimum evidence threshold, OR
+- The context does not explicitly contain the requested information, OR
+- The user asks for anything that cannot be grounded in the documents.
+
+Refusal style:
+- State you cannot answer from the provided documents.
+- Explain what is missing and how to fix it.
+- Do not guess.

@@ -1,0 +1,6 @@
+Rewrite the user's question into a short retrieval-optimized search query.
+Rules:
+- keep meaning
+- remove filler
+- keep key entities and constraints
+Return only the rewritten query.
