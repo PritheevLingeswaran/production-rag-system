@@ -46,6 +46,7 @@ class OpenAIEmbeddingsConfig(BaseModel):
 
 class SentenceTransformersConfig(BaseModel):
     model_name: str = "all-MiniLM-L6-v2"
+    local_files_only: bool = False
 
 
 class EmbeddingsConfig(BaseModel):
