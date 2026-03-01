@@ -143,8 +143,9 @@ class ChromaVectorStore(VectorStore):
                 f"Embeddings count mismatch: got {len(emb)} vectors for {len(chunks)} chunks."
             )
 
-        # Chroma's runtime validates these payloads; stubs are stricter than runtime behavior.
-        self._collection.add(
+        # Use upsert so repeated indexing refreshes existing IDs
+        # instead of serving stale content from earlier runs.
+        self._collection.upsert(
             ids=ids,
             documents=docs,
             embeddings=cast(Any, emb),

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from openai import OpenAI
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 
 @dataclass
@@ -12,6 +12,19 @@ class Usage:
     input_tokens: int = 0
     output_tokens: int = 0
     total_tokens: int = 0
+
+
+def _is_insufficient_quota_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    if "insufficient_quota" in text:
+        return True
+    code = getattr(exc, "code", None)
+    return str(code).lower() == "insufficient_quota"
+
+
+def _should_retry(exc: BaseException) -> bool:
+    # Quota exhaustion won't recover with retry; fail fast.
+    return not _is_insufficient_quota_error(exc)
 
 
 class OpenAIClient:
@@ -33,14 +46,24 @@ class OpenAIClient:
         )
         self._max_retries = max_retries
 
-    @retry(wait=wait_exponential(min=0.5, max=8), stop=stop_after_attempt(3), reraise=True)
+    @retry(
+        wait=wait_exponential(min=0.5, max=8),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception(_should_retry),
+        reraise=True,
+    )
     def embed(self, model: str, inputs: list[str]) -> tuple[list[list[float]], Usage]:
         resp = self._client.embeddings.create(model=model, input=inputs)
         vectors = [d.embedding for d in resp.data]
         usage = Usage(total_tokens=getattr(resp.usage, "total_tokens", 0))
         return vectors, usage
 
-    @retry(wait=wait_exponential(min=0.5, max=8), stop=stop_after_attempt(3), reraise=True)
+    @retry(
+        wait=wait_exponential(min=0.5, max=8),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception(_should_retry),
+        reraise=True,
+    )
     def chat(
         self,
         model: str,

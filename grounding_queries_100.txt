@@ -1,0 +1,100 @@
+How many projects are there in the resume?
+Name all projects listed in the resume.
+What is the candidate's education?
+What is the candidate's role mentioned in the resume?
+Which technologies are listed under technical skills?
+Does the resume mention FastAPI?
+Does the resume mention vector databases?
+What is the expected graduation period?
+What certifications are listed?
+Is CI/CD enabled in the project metrics?
+Is the project Dockerized?
+What is the test coverage percentage?
+What is the Prometheus metrics count?
+What is the measured uptime percentage?
+What is the error rate percentage?
+What is the average latency in milliseconds?
+What is the p95 latency in milliseconds?
+What is the throughput in RPS?
+What is the dataset size in chunks?
+What is the vector DB size?
+How many projects are there in the resume? Answer only with number.
+List the project names from the resume.
+What degree is the candidate pursuing?
+Where is the candidate studying?
+Which machine learning skills are listed?
+Which NLP skills are listed?
+Which frameworks are mentioned?
+Which databases/tools are listed?
+Does the resume mention PostgreSQL?
+Does the resume mention Kafka?
+Does the resume mention Redis?
+Does the resume mention AWS or GCP?
+What is the candidate email shown in resume?
+What is the candidate phone number shown in resume?
+Is LinkedIn present in resume?
+Is GitHub present in resume?
+What is the chunk-based dataset size in project metrics?
+What is the embedding model size in project metrics?
+Is monitoring dashboards implemented?
+Is structured logging implemented?
+What is the load test report path?
+What is the evaluation report path?
+What is the dashboard screenshot path?
+What is the CI pipeline path?
+What is the baseline comparison value?
+What is improvement vs baseline percentage?
+Was cross-validation used?
+What is fold count?
+What is precision@k improvement percentage?
+What is drift detection accuracy percentage?
+What is hallucination/error reduction percentage?
+What is crash rate under load?
+How many source documents are indexed?
+What is the vector count in the database?
+Return uptime value with source.
+Return error rate value with source.
+Return average latency value with source.
+Return p95 latency value with source.
+Return throughput value with source.
+Return test coverage value with source.
+Return Dockerized yes/no with source.
+Return CI/CD enabled yes/no with source.
+Return config-driven architecture yes/no with source.
+Return Prometheus metrics count with source.
+What projects are named in resume section?
+How many project slugs are listed?
+What is the first project name?
+What is the second project name?
+What is the third project name?
+Does resume mention production-grade hybrid RAG system?
+Does resume mention realtime ml drift?
+Does resume mention ml failure analysis framework?
+What is the education institution name?
+What is the expected graduation year range?
+Which certifications are present?
+Does metrics file include memory reduction percentage?
+Does metrics file include cost reduction percentage?
+What is events processed (streaming)?
+What is concurrent users tested value?
+What is p99 latency value?
+What is top_k default used in examples?
+Is rewrite_query set to false in benchmark queries?
+How many chunks are in processed corpus?
+How many files are in raw documents directory?
+What is vector store provider configured in base config?
+What is embeddings provider in dev config?
+What is retrieval hybrid enabled in dev config?
+What is dense_weight in dev config?
+What is bm25_k in dev config?
+What is dense_k in dev config?
+What API host is configured?
+What API port is configured?
+What monitoring endpoint is configured?
+Does project include Dockerfile?
+Does project include docker-compose?
+Does project include GitHub actions CI workflow?
+What is current hallucination rate from grounding score?
+What is current grounded rate from grounding score?
+How many labeled rows in grounding evaluation?
+How many missing labels in grounding evaluation?

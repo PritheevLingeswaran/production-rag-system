@@ -45,6 +45,9 @@ def query(
 ) -> QueryResponse:
     start = time.perf_counter()
     filter_sub = req.filter.source if req.filter and req.filter.source else None
+    # Swagger UI often sends placeholder strings if users don't edit nested defaults.
+    if filter_sub and filter_sub.strip().lower() in {"string", "none", "null"}:
+        filter_sub = None
     retriever_impl = cast(Any, retriever)
     answerer_impl = cast(Any, answerer)
     try:

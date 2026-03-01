@@ -1,0 +1,29 @@
+{
+  "summary": {
+    "total_requests": 500,
+    "success": 500,
+    "fail": 0,
+    "error_rate_percent": 0.0,
+    "duration_seconds": 3.596,
+    "throughput_rps": 139.056,
+    "latency_ms_avg_all": 351.043,
+    "latency_ms_p50_all": 336.713,
+    "latency_ms_p95_all": 528.201,
+    "latency_ms_p99_all": 549.607,
+    "latency_ms_avg_ok": 351.043,
+    "latency_ms_p50_ok": 336.713,
+    "latency_ms_p95_ok": 528.201,
+    "latency_ms_p99_ok": 549.607,
+    "top_errors": []
+  },
+  "system_stats": {
+    "cpu_used_seconds": 0.430590988,
+    "rss_start_mb": 45.609375,
+    "rss_end_mb": 42.09375,
+    "rss_delta_mb": -3.515625
+  },
+  "timestamp_utc": "2026-03-01T10:52:40Z",
+  "notes": {
+    "resume_tip": "Use latency_ms_p95_ok, throughput_rps, error_rate_percent, dataset/doc count separately."
+  }
+}

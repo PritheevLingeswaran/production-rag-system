@@ -15,7 +15,7 @@ class PathsConfig(BaseModel):
 
 
 class IngestionConfig(BaseModel):
-    supported_extensions: list[str] = Field(default_factory=lambda: [".pdf", ".txt"])
+    supported_extensions: list[str] = Field(default_factory=lambda: [".pdf", ".txt", ".md"])
 
 
 class CleaningConfig(BaseModel):
@@ -108,6 +108,8 @@ class RetrievalConfig(BaseModel):
     hybrid: HybridConfig = Field(default_factory=HybridConfig)
     rerank: RerankConfig = Field(default_factory=RerankConfig)
     min_score: float = 0.2
+    refuse_if_top_score_below: float = 0.35
+    refuse_if_top_gap_below: float = 0.03
 
 
 class GenerationConfig(BaseModel):

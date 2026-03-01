@@ -14,11 +14,15 @@ def rewrite_query(settings: Settings, client: OpenAIClient, question: str) -> st
         {"role": "system", "content": "You rewrite user questions into retrieval queries."},
         {"role": "user", "content": f"{prompt}\n\nUSER_QUESTION: {question}\nREWRITTEN_QUERY:"},
     ]
-    text, _ = client.chat(
-        model=settings.retrieval.query_rewrite.model,
-        messages=messages,
-        temperature=0.0,
-        max_output_tokens=64,
-    )
+    try:
+        text, _ = client.chat(
+            model=settings.retrieval.query_rewrite.model,
+            messages=messages,
+            temperature=0.0,
+            max_output_tokens=64,
+        )
+    except Exception as e:
+        log.warning("query_rewrite.failed_fallback", error=str(e))
+        return question
     rewritten = text.strip().strip('"')
     return rewritten if rewritten else question

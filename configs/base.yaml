@@ -11,7 +11,7 @@ paths:
   indexes_dir: data/processed/indexes
 
 ingestion:
-  supported_extensions: [".pdf", ".txt"]
+  supported_extensions: [".pdf", ".txt", ".md"]
 
 preprocessing:
   cleaning:
@@ -19,8 +19,8 @@ preprocessing:
     drop_null_bytes: true
   chunking:
     strategy: token
-    chunk_size: 800
-    chunk_overlap: 120
+    chunk_size: 500
+    chunk_overlap: 100
     max_chars_fallback: 4000
 
 embeddings:
@@ -39,7 +39,7 @@ embeddings:
 
 vector_store:
   provider: chroma   # chroma | faiss | pinecone
-  top_k: 8
+  top_k: 12
   faiss:
     metric: cosine
     normalize: true
@@ -67,6 +67,8 @@ retrieval:
     enabled: false
     model_name: cross-encoder/ms-marco-MiniLM-L-6-v2
   min_score: 0.20
+  refuse_if_top_score_below: 0.35
+  refuse_if_top_gap_below: 0.03
 
 generation:
   model: gpt-4o-mini

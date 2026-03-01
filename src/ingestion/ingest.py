@@ -4,6 +4,7 @@ import json
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import cast
 
 from ingestion.loaders import Page, iter_documents, load_pdf, load_txt
 from preprocessing.pipeline import preprocess_pages_to_chunks
@@ -31,9 +32,9 @@ def _chunk_id(source: str, page: int, idx: int) -> str:
 
 def _pages_from_path(path: Path) -> list[Page]:
     if path.suffix.lower() == ".pdf":
-        return load_pdf(path)
-    if path.suffix.lower() == ".txt":
-        return load_txt(path)
+        return cast(list[Page], load_pdf(path))
+    if path.suffix.lower() in {".txt", ".md"}:
+        return cast(list[Page], load_txt(path))
     raise ValueError(f"Unsupported file type: {path.suffix}")
 
 
