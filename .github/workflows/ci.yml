@@ -26,4 +26,4 @@ jobs:
           mypy .
       - name: Test
         run: |
-          pytest -q
+          pytest --cov=src --cov-report=term-missing --cov-fail-under=50 -q

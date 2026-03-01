@@ -310,6 +310,8 @@ async def export_grounding_sheet(
 
 def score_grounding_csv(labeled_csv: str) -> Dict[str, Any]:
     total = 0
+    quality_rows = 0
+    request_error_rows = 0
     grounded = 0
     missing = 0
     refusal_rows = 0
@@ -318,6 +320,16 @@ def score_grounding_csv(labeled_csv: str) -> Dict[str, Any]:
         r = csv.DictReader(f)
         for row in r:
             total += 1
+            sources = (row.get("sources") or "").strip().lower()
+            refusal_reason = (row.get("refusal_reason") or "").strip().lower()
+            is_request_error = ("error:" in sources) or (
+                refusal_reason.startswith("request_error:")
+            )
+            if is_request_error:
+                request_error_rows += 1
+                continue
+
+            quality_rows += 1
             answer = (row.get("answer") or "").strip().lower()
             ref_flag = (row.get("is_refusal_model") or "").strip().lower()
             if ref_flag in {"1", "true", "yes"} or (
@@ -334,17 +346,19 @@ def score_grounding_csv(labeled_csv: str) -> Dict[str, Any]:
             if val == "1":
                 grounded += 1
 
-    labeled = total - missing
+    labeled = quality_rows - missing
     grounded_rate = grounded / labeled if labeled > 0 else 0.0
     hallucination_rate = 1.0 - grounded_rate if labeled > 0 else 0.0
-    refusal_rate = refusal_rows / total if total > 0 else 0.0
-    non_refusal_rows = max(0, total - refusal_rows)
+    refusal_rate = refusal_rows / quality_rows if quality_rows > 0 else 0.0
+    non_refusal_rows = max(0, quality_rows - refusal_rows)
     answered_grounded_rate = (
         grounded / non_refusal_rows if non_refusal_rows > 0 else 0.0
     )
 
     return {
         "total_rows": total,
+        "quality_rows": quality_rows,
+        "request_error_rows": request_error_rows,
         "labeled_rows": labeled,
         "missing_labels": missing,
         "grounded_rate": grounded_rate,
@@ -377,10 +391,22 @@ def auto_label_grounding_csv(csv_path: str) -> Dict[str, Any]:
 
     updated = 0
     kept = 0
+    skipped_request_errors = 0
     grounded = 0
     hallucinated = 0
 
     for row in rows:
+        sources = (row.get("sources") or "").strip().lower()
+        refusal_reason = (row.get("refusal_reason") or "").strip().lower()
+        is_request_error = ("error:" in sources) or (
+            refusal_reason.startswith("request_error:")
+        )
+        if is_request_error:
+            # Keep these unlabeled; they are connectivity failures, not model quality.
+            row["is_grounded"] = ""
+            skipped_request_errors += 1
+            continue
+
         cur = (row.get("is_grounded") or "").strip()
         if cur in {"0", "1"}:
             kept += 1
@@ -433,6 +459,7 @@ def auto_label_grounding_csv(csv_path: str) -> Dict[str, Any]:
         "rows_total": len(rows),
         "rows_updated": updated,
         "rows_kept_labeled": kept,
+        "rows_skipped_request_errors": skipped_request_errors,
         "grounded_1": grounded,
         "hallucinated_0": hallucinated,
         "path": csv_path,

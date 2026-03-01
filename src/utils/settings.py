@@ -110,6 +110,7 @@ class RetrievalConfig(BaseModel):
     min_score: float = 0.2
     refuse_if_top_score_below: float = 0.35
     refuse_if_top_gap_below: float = 0.03
+    debug_top_n: int = 5
 
 
 class GenerationConfig(BaseModel):
@@ -128,6 +129,7 @@ class APIConfig(BaseModel):
     port: int = 8000
     reload: bool = True
     cors: CorsConfig = Field(default_factory=CorsConfig)
+    enable_debug_retrieval_endpoint: bool = False
 
 
 class PrometheusConfig(BaseModel):

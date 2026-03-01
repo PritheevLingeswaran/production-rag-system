@@ -1,3 +1,5 @@
+import os
+
 from fastapi.testclient import TestClient
 
 from api import deps
@@ -79,6 +81,7 @@ def test_query_endpoint() -> None:
     client = TestClient(app)
     r = client.post("/query", json={"query": "warranty?", "top_k": 3})
     assert r.status_code == 200
+    assert "x-request-id" in r.headers
     j = r.json()
     assert j["refusal"]["is_refusal"] is False
     assert j["sources"][0]["chunk_id"] == "x:p1:c0"
@@ -96,3 +99,20 @@ def test_query_endpoint_generation_failure_returns_refusal() -> None:
     assert j["refusal"]["is_refusal"] is True
     assert j["metrics"]["error"] == "generation_failed"
     assert len(j["sources"]) == 1
+
+
+def test_metrics_endpoint_exposes_grounding_and_refusal_metrics() -> None:
+    app = create_app()
+    app.dependency_overrides[deps.get_retriever] = _dummy_retriever
+    app.dependency_overrides[deps.get_answerer] = _dummy_answerer
+    client = TestClient(app)
+
+    _ = client.post("/query", json={"query": "warranty?", "top_k": 3})
+    mr = client.get("/metrics")
+    assert mr.status_code == 200
+    body = mr.text
+    assert "rag_refusals_total" in body
+    assert "rag_grounded_answers_total" in body
+    assert "rag_retrieval_top_score" in body
+    assert "rag_http_requests_total" in body
+os.environ["RAG_SKIP_STARTUP_VALIDATION"] = "1"

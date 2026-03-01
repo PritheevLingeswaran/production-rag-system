@@ -10,10 +10,13 @@ from retrieval.corpus import load_chunks_jsonl
 from retrieval.query_rewrite import rewrite_query
 from retrieval.rerank import CrossEncoderReranker
 from retrieval.vector_store import IndexedChunk, SearchHit, VectorStore
+from utils.logging import get_logger
 from utils.openai_client import OpenAIClient
 from utils.settings import Settings
 
-RetrievalMode = Literal["dense", "hybrid"]
+log = get_logger(__name__)
+
+RetrievalMode = Literal["dense", "hybrid", "bm25"]
 
 
 @dataclass
@@ -22,6 +25,7 @@ class RetrievalOutput:
     hits: list[SearchHit]
     embedding_tokens: int
     embedding_cost_usd: float
+    debug: dict[str, object] | None = None
 
 
 def _normalize_bm25(hits: list[BM25DocHit]) -> dict[str, float]:
@@ -119,7 +123,66 @@ class Retriever:
         fused.sort(key=lambda x: float(x.score), reverse=True)
         return fused[:top_k]
 
+    def _bm25_only_hits(
+        self,
+        query: str,
+        *,
+        top_k: int,
+        filter_source_substr: str | None,
+    ) -> list[SearchHit]:
+        bm25, chunk_by_id = self._lazy_load_bm25_and_corpus()
+
+        def _filter_fn(cid: str) -> bool:
+            if not filter_source_substr:
+                return True
+            c = chunk_by_id.get(cid)
+            return bool(c) and (filter_source_substr in c.source)
+
+        sparse_hits = bm25.query(
+            query,
+            top_k=max(int(top_k), int(self.settings.retrieval.hybrid.bm25_k)),
+            filter_fn=_filter_fn,
+        )
+        sparse_norm = _normalize_bm25(sparse_hits)
+        hits: list[SearchHit] = []
+        for h in sparse_hits:
+            chunk = chunk_by_id.get(h.chunk_id)
+            if chunk is None:
+                continue
+            hits.append(SearchHit(chunk=chunk, score=float(sparse_norm.get(h.chunk_id, 0.0))))
+            if len(hits) >= top_k:
+                break
+        return hits
+
+    @staticmethod
+    def _apply_min_score_cutoff(
+        hits: list[SearchHit], min_score: float
+    ) -> tuple[list[SearchHit], bool]:
+        if not hits:
+            return hits, False
+        filtered = [h for h in hits if float(h.score) >= float(min_score)]
+        # Two-stage gating: keep candidates for answer-stage refusal if cutoff wipes all.
+        if filtered:
+            return filtered, True
+        return hits, False
+
     def retrieve(
+        self,
+        question: str,
+        top_k: int,
+        filter_source_substr: str | None = None,
+        rewrite_override: bool | None = None,
+        mode_override: RetrievalMode | None = None,
+    ) -> RetrievalOutput:
+        return self.retrieve_with_debug(
+            question=question,
+            top_k=top_k,
+            filter_source_substr=filter_source_substr,
+            rewrite_override=rewrite_override,
+            mode_override=mode_override,
+        )
+
+    def retrieve_with_debug(
         self,
         question: str,
         top_k: int,
@@ -142,6 +205,52 @@ class Retriever:
         query = (
             rewrite_query(self.settings, self.rewrite_client, question) if do_rewrite else question
         )
+        debug: dict[str, object] = {
+            "mode": mode,
+            "question": question,
+            "query_used": query,
+            "rewrite_applied": bool(do_rewrite),
+            "top_k_requested": int(top_k),
+            "threshold_min_score": float(self.settings.retrieval.min_score),
+            "stage_counts": {},
+            "top_scores": {},
+        }
+        log.info(
+            "retrieval.query_rewrite",
+            mode=mode,
+            rewrite_applied=bool(do_rewrite),
+            query_used=query,
+        )
+
+        if mode == "bm25":
+            hits = self._bm25_only_hits(
+                query, top_k=int(top_k), filter_source_substr=filter_source_substr
+            )
+            hits, threshold_applied = self._apply_min_score_cutoff(
+                hits, float(self.settings.retrieval.min_score)
+            )
+            top_scores = [round(float(h.score), 6) for h in hits[: self.settings.retrieval.debug_top_n]]
+            debug["stage_counts"] = {
+                "bm25_hits": len(hits),
+                "final_hits": len(hits),
+            }
+            debug["top_scores"] = {"bm25": top_scores, "final": top_scores}
+            debug["threshold_applied"] = threshold_applied
+            log.info(
+                "retrieval.final",
+                mode=mode,
+                bm25_hits=len(hits),
+                threshold_applied=bool(threshold_applied),
+                num_hits=len(hits),
+                top_scores=top_scores,
+            )
+            return RetrievalOutput(
+                query_used=query,
+                hits=hits,
+                embedding_tokens=0,
+                embedding_cost_usd=0.0,
+                debug=debug,
+            )
 
         # Dense retrieval always happens (we need embeddings anyway to answer). We can still reduce
         # dense candidates in hybrid if you want, but in practice a slightly larger dense_k improves stability.
@@ -153,6 +262,18 @@ class Retriever:
         dense_hits = self.store.search(
             q_vec, top_k=dense_k, filter_source_substr=filter_source_substr
         )
+        dense_top_scores = [
+            round(float(h.score), 6) for h in dense_hits[: self.settings.retrieval.debug_top_n]
+        ]
+        log.info(
+            "retrieval.dense_hits",
+            mode=mode,
+            dense_k=dense_k,
+            num_hits=len(dense_hits),
+            top_scores=dense_top_scores,
+        )
+        debug["stage_counts"] = {"dense_hits": len(dense_hits)}
+        debug["top_scores"] = {"dense": dense_top_scores}
 
         hits = dense_hits[:top_k]
 
@@ -167,6 +288,18 @@ class Retriever:
 
             sparse_k = int(self.settings.retrieval.hybrid.bm25_k)
             sparse_hits = bm25.query(query, top_k=max(int(top_k), sparse_k), filter_fn=_filter_fn)
+            sparse_norm = _normalize_bm25(sparse_hits)
+            sparse_top_scores = [
+                round(float(sparse_norm.get(h.chunk_id, 0.0)), 6)
+                for h in sparse_hits[: self.settings.retrieval.debug_top_n]
+            ]
+            log.info(
+                "retrieval.bm25_hits",
+                mode=mode,
+                bm25_k=sparse_k,
+                num_hits=len(sparse_hits),
+                top_scores=sparse_top_scores,
+            )
 
             hits = self._fuse_dense_and_sparse(
                 dense_hits=dense_hits,
@@ -174,6 +307,19 @@ class Retriever:
                 chunk_by_id=chunk_by_id,
                 top_k=top_k,
             )
+            fusion_top_scores = [
+                round(float(h.score), 6) for h in hits[: self.settings.retrieval.debug_top_n]
+            ]
+            log.info(
+                "retrieval.fusion_hits",
+                mode=mode,
+                num_hits=len(hits),
+                top_scores=fusion_top_scores,
+            )
+            debug["stage_counts"]["bm25_hits"] = len(sparse_hits)
+            debug["stage_counts"]["fusion_hits"] = len(hits)
+            debug["top_scores"]["bm25"] = sparse_top_scores
+            debug["top_scores"]["fusion"] = fusion_top_scores
 
         # Optional reranker runs *after* fusion (so it can improve precision of the hybrid union).
         if self.settings.retrieval.rerank.enabled and hits:
@@ -183,13 +329,43 @@ class Retriever:
                 SearchHit(chunk=hits[r.idx].chunk, score=min(1.0, max(0.0, float(r.score))))
                 for r in reranked
             ]
+            rerank_top_scores = [
+                round(float(h.score), 6) for h in hits[: self.settings.retrieval.debug_top_n]
+            ]
+            log.info(
+                "retrieval.rerank_hits",
+                mode=mode,
+                num_hits=len(hits),
+                top_scores=rerank_top_scores,
+            )
+            debug["stage_counts"]["rerank_hits"] = len(hits)
+            debug["top_scores"]["rerank"] = rerank_top_scores
 
         # Min-score cutoff.
-        hits = [h for h in hits if float(h.score) >= float(self.settings.retrieval.min_score)]
+        hits, threshold_applied = self._apply_min_score_cutoff(
+            hits, float(self.settings.retrieval.min_score)
+        )
+        final_top_scores = [
+            round(float(h.score), 6) for h in hits[: self.settings.retrieval.debug_top_n]
+        ]
+        log.info(
+            "retrieval.final",
+            mode=mode,
+            applied_threshold=float(self.settings.retrieval.min_score),
+            threshold_applied=bool(threshold_applied),
+            num_hits=len(hits),
+            top_scores=final_top_scores,
+            embedding_tokens=int(emb.total_tokens),
+        )
+        debug["stage_counts"]["final_hits"] = len(hits)
+        debug["top_scores"]["final"] = final_top_scores
+        debug["threshold_applied"] = threshold_applied
+        debug["embedding_tokens"] = int(emb.total_tokens)
 
         return RetrievalOutput(
             query_used=query,
             hits=hits,
             embedding_tokens=emb.total_tokens,
             embedding_cost_usd=emb.cost_usd,
+            debug=debug,
         )

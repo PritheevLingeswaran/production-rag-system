@@ -3,6 +3,7 @@ app:
 
 api:
   reload: true
+  enable_debug_retrieval_endpoint: false
 
 # Dev-friendly defaults:
 # - Use local embeddings to avoid embedding API cost.
@@ -13,9 +14,9 @@ embeddings:
   batch_size: 32
 
 retrieval:
-  min_score: 0.30
-  refuse_if_top_score_below: 0.45
-  refuse_if_top_gap_below: 0.05
+  min_score: 0.18
+  refuse_if_top_score_below: 0.20
+  refuse_if_top_gap_below: 0.01
   hybrid:
     enabled: true
     dense_weight: 0.65

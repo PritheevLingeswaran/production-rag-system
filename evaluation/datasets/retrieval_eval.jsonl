@@ -1,0 +1,6 @@
+{"query":"How many projects are there in the resume?","relevant_doc_ids":["Pritheev_Resume.pdf:p1:c2","Pritheev_Resume.pdf:p1:c3","Pritheev_Resume.pdf:p1:c4"]}
+{"query":"What is the candidate's education?","relevant_doc_ids":["Pritheev_Resume.pdf:p1:c6"]}
+{"query":"Does the resume mention FastAPI?","relevant_doc_ids":["Pritheev_Resume.pdf:p1:c1","Pritheev_Resume.pdf:p1:c4"]}
+{"query":"What is the uptime value in project metrics?","relevant_doc_ids":["project_metrics.md:p1:c0"]}
+{"query":"How many vectors are in the vector DB according to project metrics?","relevant_doc_ids":["project_metrics.md:p1:c0"]}
+{"query":"Is CI/CD enabled in project metrics?","relevant_doc_ids":["project_metrics.md:p1:c0","project_metrics.md:p1:c1"]}

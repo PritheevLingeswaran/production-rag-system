@@ -20,9 +20,9 @@ If a value is not directly measured by artifacts or reproducible commands, it is
 ## 3) Scale
 
 - Number of source documents: 2 (from `data/raw/documents`)
-- Dataset size (samples/docs): 5 chunks (from `data/processed/chunks/chunks.jsonl`)
+- Dataset size (samples/docs): 9 chunks (from `data/processed/chunks/chunks.jsonl`)
 - Events processed (streaming): N/A (not measured)
-- Vector DB size: 5 vectors (indexed chunks)
+- Vector DB size: 9 vectors (indexed chunks)
 - Embedding/model size: all-MiniLM-L6-v2 (384-dim embeddings)
 
 ## 4) ML Evaluation
@@ -37,7 +37,7 @@ If a value is not directly measured by artifacts or reproducible commands, it is
 
 ## 5) Observability
 
-- Prometheus metrics count: 3 (`rag_request_latency_seconds`, `rag_request_cost_usd_total`, `rag_request_tokens_total`)
+- Prometheus metrics count: 9 (`rag_request_latency_seconds`, `rag_request_cost_usd_total`, `rag_request_tokens_total`, `rag_http_requests_total`, `rag_request_errors_total`, `rag_refusals_total`, `rag_grounded_answers_total`, `rag_retrieval_top_score`, `rag_retrieval_top_gap`)
 - Structured logging implemented (yes/no): yes
 - Monitoring dashboards implemented (yes/no): N/A (artifact not found)
 
@@ -45,7 +45,7 @@ If a value is not directly measured by artifacts or reproducible commands, it is
 
 - Dockerized (yes/no): yes
 - CI/CD enabled (yes/no): yes
-- Test coverage (%): 50 (from `pytest --cov=src`)
+- Test coverage (%): 57 (from `pytest --cov=src`)
 - Config-driven architecture (yes/no): yes
 
 ## 7) Cost / Efficiency
