@@ -6,11 +6,11 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
-from api.deps import get_answerer, get_retriever
+from api.deps import get_answerer, get_retriever, validate_runtime_readiness
 from monitoring.metrics import (
     REQUEST_COST_USD,
     REQUEST_ERRORS,
@@ -33,15 +33,18 @@ def _record_usage_metrics(
     *,
     latency_s: float,
     embedding_tokens: int,
-    llm_in: int,
-    llm_out: int,
-    total_cost: float,
+    llm_in: int | None,
+    llm_out: int | None,
+    total_cost: float | None,
 ) -> None:
     REQUEST_LATENCY.observe(latency_s)
-    REQUEST_COST_USD.inc(total_cost)
+    if total_cost is not None:
+        REQUEST_COST_USD.inc(total_cost)
     REQUEST_TOKENS.labels(kind="embedding").inc(float(embedding_tokens))
-    REQUEST_TOKENS.labels(kind="llm_in").inc(float(llm_in))
-    REQUEST_TOKENS.labels(kind="llm_out").inc(float(llm_out))
+    if llm_in is not None:
+        REQUEST_TOKENS.labels(kind="llm_in").inc(float(llm_in))
+    if llm_out is not None:
+        REQUEST_TOKENS.labels(kind="llm_out").inc(float(llm_out))
 
 
 def _record_refusal(reason: str) -> None:
@@ -99,6 +102,15 @@ def healthz() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
+@router.get("/readyz", response_model=HealthResponse)
+def readyz() -> HealthResponse:
+    try:
+        validate_runtime_readiness()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return HealthResponse(status="ok")
+
+
 @router.post("/query", response_model=QueryResponse)
 def query(
     req: QueryRequest,
@@ -137,9 +149,9 @@ def query(
                 _record_usage_metrics(
                     latency_s=latency_s,
                     embedding_tokens=0,
-                    llm_in=0,
-                    llm_out=0,
-                    total_cost=0.0,
+                    llm_in=None,
+                    llm_out=None,
+                    total_cost=None,
                 )
                 _record_refusal("retrieval backend error")
                 return QueryResponse(
@@ -167,9 +179,9 @@ def query(
             _record_usage_metrics(
                 latency_s=latency_s,
                 embedding_tokens=0,
-                llm_in=0,
-                llm_out=0,
-                total_cost=0.0,
+                llm_in=None,
+                llm_out=None,
+                total_cost=None,
             )
             _record_refusal("retrieval backend error")
             return QueryResponse(
@@ -201,8 +213,8 @@ def query(
         _record_usage_metrics(
             latency_s=latency_s,
             embedding_tokens=int(r.embedding_tokens),
-            llm_in=0,
-            llm_out=0,
+            llm_in=None,
+            llm_out=None,
             total_cost=total_cost,
         )
         _record_refusal("generation backend error")
@@ -219,9 +231,9 @@ def query(
                 "query_used": r.query_used,
                 "embedding_tokens": r.embedding_tokens,
                 "embedding_cost_usd": r.embedding_cost_usd,
-                "llm_tokens_in": 0,
-                "llm_tokens_out": 0,
-                "llm_cost_usd": 0.0,
+                "llm_tokens_in": None,
+                "llm_tokens_out": None,
+                "llm_cost_usd": None,
                 "total_cost_usd": total_cost,
                 "num_hits": len(r.hits),
                 "error": "generation_failed",
@@ -230,12 +242,16 @@ def query(
         )
 
     latency_s = time.perf_counter() - start
-    total_cost = float(r.embedding_cost_usd + g.llm_cost_usd)
+    total_cost = (
+        float(r.embedding_cost_usd + float(g.llm_cost_usd or 0.0))
+        if g.llm_cost_usd is not None
+        else None
+    )
     _record_usage_metrics(
         latency_s=latency_s,
         embedding_tokens=int(r.embedding_tokens),
-        llm_in=int(g.llm_tokens_in),
-        llm_out=int(g.llm_tokens_out),
+        llm_in=g.llm_tokens_in,
+        llm_out=g.llm_tokens_out,
         total_cost=total_cost,
     )
 
@@ -259,6 +275,9 @@ def query(
             "total_cost_usd": total_cost,
             "num_hits": len(r.hits),
             "latency_ms": round(latency_s * 1000.0, 2),
+            "answerability": g.answerability,
+            "citation_coverage": g.citation_coverage,
+            "cost_measured": g.llm_cost_usd is not None,
         },
     )
 

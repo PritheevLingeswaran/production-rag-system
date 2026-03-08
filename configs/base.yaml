@@ -12,6 +12,8 @@ paths:
 
 ingestion:
   supported_extensions: [".pdf", ".txt", ".md"]
+  deduplicate_documents: true
+  max_document_chars: 500000
 
 preprocessing:
   cleaning:
@@ -55,17 +57,34 @@ retrieval:
   query_rewrite:
     enabled: true
     model: gpt-4o-mini
+  bm25:
+    lowercase: true
+    strip_punctuation: true
+    remove_stopwords: true
+    stemming: false
+    min_token_length: 2
+  cache:
+    enabled: true
+    max_entries: 256
   hybrid:
     enabled: false
+    fusion_method: weighted
     # Candidate set sizes for hybrid retrieval.
     # bm25_k is over the FULL corpus.
     bm25_k: 200
     dense_k: 40
     # Tunable fusion weight: final = dense_weight*dense + (1-dense_weight)*bm25
     dense_weight: 0.65
+    rrf_k: 60
+    min_dense_score: 0.0
+    min_sparse_score: 0.0
   rerank:
     enabled: false
+    provider: lexical
     model_name: cross-encoder/ms-marco-MiniLM-L-6-v2
+    query_weight: 0.6
+    retrieval_weight: 0.4
+    min_query_term_coverage: 0.1
   min_score: 0.20
   refuse_if_top_score_below: 0.35
   refuse_if_top_gap_below: 0.03
@@ -76,6 +95,16 @@ generation:
   temperature: 0.0
   max_output_tokens: 700
   strict_refusal: true
+  answerability:
+    answerable_top_score: 0.30
+    partial_top_score: 0.18
+    evidence_score_threshold: 0.16
+    min_supporting_hits: 1
+    min_query_term_coverage: 0.20
+  pricing:
+    input_usd_per_1k_tokens: 0.00015
+    output_usd_per_1k_tokens: 0.0006
+    pricing_source: openai-list-price-config
 
 api:
   host: 0.0.0.0
@@ -84,6 +113,7 @@ api:
     allow_origins: ["*"]
   reload: true
   enable_debug_retrieval_endpoint: false
+  request_timeout_s: 60
 
 monitoring:
   prometheus:

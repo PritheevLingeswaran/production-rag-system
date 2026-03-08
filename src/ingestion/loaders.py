@@ -15,16 +15,22 @@ class Page:
 
 
 def load_pdf(path: Path) -> list[Page]:
-    reader = PdfReader(str(path))
-    pages: list[Page] = []
-    for i, p in enumerate(reader.pages):
-        txt = p.extract_text() or ""
-        pages.append(Page(source=str(path), page=i + 1, text=txt))
-    return pages
+    try:
+        reader = PdfReader(str(path))
+        pages: list[Page] = []
+        for i, p in enumerate(reader.pages):
+            txt = p.extract_text() or ""
+            pages.append(Page(source=str(path), page=i + 1, text=txt))
+        return pages
+    except Exception as exc:
+        raise RuntimeError(f"Failed to parse PDF '{path}': {exc}") from exc
 
 
 def load_txt(path: Path) -> list[Page]:
-    txt = path.read_text(encoding="utf-8", errors="ignore")
+    try:
+        txt = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception as exc:
+        raise RuntimeError(f"Failed to read text file '{path}': {exc}") from exc
     return [Page(source=str(path), page=1, text=txt)]
 
 

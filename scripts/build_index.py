@@ -28,7 +28,10 @@ def build_index_main() -> None:
     # This is a local, reproducible baseline. Large deployments should swap this for Lucene/ES.
     bm25_dir = Path(settings.paths.indexes_dir) / "bm25"
     texts_by_id: dict[str, str] = {c.chunk_id: c.text for c in chunks}
-    BM25PersistentIndex.build(texts_by_id).save(str(bm25_dir))
+    BM25PersistentIndex.build(
+        texts_by_id,
+        tokenizer_config=settings.retrieval.bm25,
+    ).save(str(bm25_dir))
     log.info("index.bm25_saved", dir=str(bm25_dir), num_docs=len(texts_by_id))
 
     embedder = build_embeddings_backend(settings)

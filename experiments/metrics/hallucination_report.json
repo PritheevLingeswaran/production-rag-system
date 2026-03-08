@@ -1,40 +1,37 @@
 {
   "measured": true,
   "rule": {
-    "hallucination": "A response is counted as hallucinated when it answers a refusal-required question without refusing, or when it answers an answer-required question with unsupported content: invalid/missing citations or an answer that does not match the gold acceptable answers.",
-    "citation_grounding_failure": "Non-refusal answer with no valid citation pointing to a returned source chunk ID.",
-    "refusal_correctness": "Refusal-required examples are correct only when the system explicitly refuses."
-  },
-  "datasets": {
-    "examples": 11,
-    "answer_expected": 7,
-    "refusal_expected": 4
+    "hallucination": "A response is hallucinated when it answers a refusal-required question without refusing, or when it answers an answer-required question with missing/invalid citations or a gold-mismatched answer.",
+    "citation_grounding_failure": "A non-refusal answer without citations that reference returned source IDs.",
+    "supported_answer_rate": "Share of answer-required examples answered with valid citations and a gold-matching answer."
   },
   "baseline_dense": {
     "example_count": 11,
-    "hallucination_rate": 0.2727,
+    "hallucination_rate": 0.6364,
     "citation_grounding_failure_rate": 1.0,
-    "unsupported_claim_rate": 0.2727,
+    "unsupported_claim_rate": 0.6364,
     "refusal_correctness_rate": 1.0,
-    "false_refusal_rate": 0.5714,
-    "answered_rate": 0.2727,
-    "avg_cost_per_query_usd": 0.0,
-    "avg_embedding_tokens_per_query": 0.0,
-    "avg_llm_tokens_in_per_query": 0.0,
-    "avg_llm_tokens_out_per_query": 0.0
+    "false_refusal_rate": 0.0,
+    "supported_answer_rate": 0.0,
+    "citation_coverage": 0.0,
+    "avg_cost_per_query_usd": null,
+    "avg_embedding_tokens_per_query": 7.3636,
+    "avg_llm_tokens_in_per_query": 4795.2727,
+    "avg_llm_tokens_out_per_query": 15.7273
   },
   "strict_grounded_hybrid": {
     "example_count": 11,
-    "hallucination_rate": 0.0,
+    "hallucination_rate": 0.1818,
     "citation_grounding_failure_rate": 0.0,
-    "unsupported_claim_rate": 0.0,
+    "unsupported_claim_rate": 0.1818,
     "refusal_correctness_rate": 1.0,
-    "false_refusal_rate": 0.5714,
-    "answered_rate": 0.2727,
-    "avg_cost_per_query_usd": 0.0,
-    "avg_embedding_tokens_per_query": 0.0,
-    "avg_llm_tokens_in_per_query": 0.0,
-    "avg_llm_tokens_out_per_query": 0.0
+    "false_refusal_rate": 0.0,
+    "supported_answer_rate": 0.7143,
+    "citation_coverage": 0.1111,
+    "avg_cost_per_query_usd": null,
+    "avg_embedding_tokens_per_query": 7.3636,
+    "avg_llm_tokens_in_per_query": 4795.3636,
+    "avg_llm_tokens_out_per_query": 15.7273
   },
   "per_example": {
     "baseline_dense": [
@@ -43,9 +40,10 @@
         "question": "How many source documents are indexed?",
         "expected_behavior": "answer",
         "retrieval_mode": "dense",
-        "answer": "I found relevant sources, but I could not produce a reliable final answer.",
-        "refusal": true,
-        "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answer": "2 (from `data/raw/documents`) (source: project_metrics.md:p1:c0)",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -57,16 +55,17 @@
           "Pritheev_Resume.pdf:p1:c5",
           "Pritheev_Resume.pdf:p1:c2"
         ],
-        "valid_citation": true,
+        "valid_citation": false,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": false,
-        "false_refusal": true,
-        "unsupported_claim": false,
-        "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "false_refusal": false,
+        "unsupported_claim": true,
+        "hallucinated": true,
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 20
       },
       {
         "id": "hal-2",
@@ -76,6 +75,7 @@
         "answer": "9 vectors (indexed chunks) (source: project_metrics.md:p1:c0)",
         "refusal": false,
         "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -88,15 +88,16 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": false,
+        "citation_coverage": 0.0,
         "answer_matches_gold": true,
         "refusal_correct": false,
         "false_refusal": false,
         "unsupported_claim": true,
         "hallucinated": true,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 17
       },
       {
         "id": "hal-3",
@@ -106,6 +107,7 @@
         "answer": "yes (source: project_metrics.md:p1:c1)",
         "refusal": false,
         "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c1",
           "project_metrics.md:p1:c0",
@@ -118,24 +120,26 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": false,
+        "citation_coverage": 0.0,
         "answer_matches_gold": true,
         "refusal_correct": false,
         "false_refusal": false,
         "unsupported_claim": true,
         "hallucinated": true,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 10,
+        "llm_tokens_in": 4797,
+        "llm_tokens_out": 12
       },
       {
         "id": "hal-4",
         "question": "What is the candidate's education?",
         "expected_behavior": "answer",
         "retrieval_mode": "dense",
-        "answer": "I found relevant sources, but I could not produce a reliable final answer.",
-        "refusal": true,
-        "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answer": "B.Tech - Computer Science Engineering (Artificial Intelligence & Machine Learning), SRM Institute of Science and Technology.",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -147,25 +151,27 @@
           "Pritheev_Resume.pdf:p1:c1",
           "Pritheev_Resume.pdf:p1:c5"
         ],
-        "valid_citation": true,
-        "answer_matches_gold": false,
+        "valid_citation": false,
+        "citation_coverage": 0.0,
+        "answer_matches_gold": true,
         "refusal_correct": false,
-        "false_refusal": true,
-        "unsupported_claim": false,
-        "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "false_refusal": false,
+        "unsupported_claim": true,
+        "hallucinated": true,
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 21
       },
       {
         "id": "hal-5",
         "question": "What is the expected graduation period?",
         "expected_behavior": "answer",
         "retrieval_mode": "dense",
-        "answer": "I found relevant sources, but I could not produce a reliable final answer.",
-        "refusal": true,
-        "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answer": "2024-2028 (Expected)",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "partially_answerable",
         "source_ids": [
           "Pritheev_Resume.pdf:p1:c0",
           "project_metrics.md:p1:c0",
@@ -177,16 +183,17 @@
           "Pritheev_Resume.pdf:p1:c5",
           "Pritheev_Resume.pdf:p1:c1"
         ],
-        "valid_citation": true,
-        "answer_matches_gold": false,
+        "valid_citation": false,
+        "citation_coverage": 0.0,
+        "answer_matches_gold": true,
         "refusal_correct": false,
-        "false_refusal": true,
-        "unsupported_claim": false,
-        "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "false_refusal": false,
+        "unsupported_claim": true,
+        "hallucinated": true,
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4796,
+        "llm_tokens_out": 8
       },
       {
         "id": "hal-6",
@@ -196,6 +203,7 @@
         "answer": "yes",
         "refusal": false,
         "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c1",
           "project_metrics.md:p1:c0",
@@ -208,24 +216,26 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": false,
+        "citation_coverage": 0.0,
         "answer_matches_gold": true,
         "refusal_correct": false,
         "false_refusal": false,
         "unsupported_claim": true,
         "hallucinated": true,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 1
       },
       {
         "id": "hal-7",
         "question": "What certifications are listed?",
         "expected_behavior": "answer",
         "retrieval_mode": "dense",
-        "answer": "I found relevant sources, but I could not produce a reliable final answer.",
-        "refusal": true,
-        "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answer": "DeepLearning.AI - NLP / LLM Fundamentals; Andrew Ng - Machine Learning; Oracle OCI 2025 - Generative AI Professional; IBM - AI Essentials V2",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c1",
           "project_metrics.md:p1:c0",
@@ -237,16 +247,17 @@
           "Pritheev_Resume.pdf:p1:c0",
           "Pritheev_Resume.pdf:p1:c5"
         ],
-        "valid_citation": true,
+        "valid_citation": false,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": false,
-        "false_refusal": true,
-        "unsupported_claim": false,
-        "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "false_refusal": false,
+        "unsupported_claim": true,
+        "hallucinated": true,
+        "cost_usd": null,
+        "embedding_tokens": 5,
+        "llm_tokens_in": 4793,
+        "llm_tokens_out": 34
       },
       {
         "id": "hal-8",
@@ -256,6 +267,7 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "Pritheev_Resume.pdf:p1:c3",
@@ -268,15 +280,16 @@
           "Pritheev_Resume.pdf:p1:c1"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 15
       },
       {
         "id": "hal-9",
@@ -286,6 +299,7 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -298,15 +312,16 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 8,
+        "llm_tokens_in": 4796,
+        "llm_tokens_out": 15
       },
       {
         "id": "hal-10",
@@ -316,6 +331,7 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -328,15 +344,16 @@
           "Pritheev_Resume.pdf:p1:c6"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 8,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 15
       },
       {
         "id": "hal-11",
@@ -346,6 +363,7 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c3",
@@ -358,15 +376,16 @@
           "project_metrics.md:p1:c0"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 8,
+        "llm_tokens_in": 4796,
+        "llm_tokens_out": 15
       }
     ],
     "strict_grounded_hybrid": [
@@ -375,9 +394,10 @@
         "question": "How many source documents are indexed?",
         "expected_behavior": "answer",
         "retrieval_mode": "hybrid",
-        "answer": "I found relevant sources, but I could not produce a reliable final answer.",
-        "refusal": true,
-        "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answer": "2 (from `data/raw/documents`) (source: project_metrics.md:p1:c0) [project_metrics.md:p1:c0]",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -390,15 +410,16 @@
           "Pritheev_Resume.pdf:p1:c2"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.1111111111111111,
         "answer_matches_gold": false,
         "refusal_correct": false,
-        "false_refusal": true,
-        "unsupported_claim": false,
-        "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "false_refusal": false,
+        "unsupported_claim": true,
+        "hallucinated": true,
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 20
       },
       {
         "id": "hal-2",
@@ -408,6 +429,7 @@
         "answer": "9 vectors (indexed chunks) (source: project_metrics.md:p1:c0) [project_metrics.md:p1:c0]",
         "refusal": false,
         "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -420,15 +442,16 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.1111111111111111,
         "answer_matches_gold": true,
         "refusal_correct": false,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 17
       },
       {
         "id": "hal-3",
@@ -438,6 +461,7 @@
         "answer": "yes (source: project_metrics.md:p1:c0) [project_metrics.md:p1:c0]",
         "refusal": false,
         "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -450,59 +474,63 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.1111111111111111,
         "answer_matches_gold": true,
         "refusal_correct": false,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 10,
+        "llm_tokens_in": 4797,
+        "llm_tokens_out": 12
       },
       {
         "id": "hal-4",
         "question": "What is the candidate's education?",
         "expected_behavior": "answer",
         "retrieval_mode": "hybrid",
-        "answer": "I found relevant sources, but I could not produce a reliable final answer.",
-        "refusal": true,
-        "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answer": "B.Tech - Computer Science Engineering (Artificial Intelligence & Machine Learning), SRM Institute of Science and Technology. [project_metrics.md:p1:c0]",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
+          "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c3",
-          "Pritheev_Resume.pdf:p1:c4",
-          "Pritheev_Resume.pdf:p1:c0",
           "Pritheev_Resume.pdf:p1:c6",
-          "Pritheev_Resume.pdf:p1:c1",
+          "Pritheev_Resume.pdf:p1:c4",
           "Pritheev_Resume.pdf:p1:c2",
-          "Pritheev_Resume.pdf:p1:c5",
-          "project_metrics.md:p1:c1"
+          "Pritheev_Resume.pdf:p1:c0",
+          "Pritheev_Resume.pdf:p1:c1",
+          "Pritheev_Resume.pdf:p1:c5"
         ],
         "valid_citation": true,
-        "answer_matches_gold": false,
+        "citation_coverage": 0.1111111111111111,
+        "answer_matches_gold": true,
         "refusal_correct": false,
-        "false_refusal": true,
+        "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 21
       },
       {
         "id": "hal-5",
         "question": "What is the expected graduation period?",
         "expected_behavior": "answer",
         "retrieval_mode": "hybrid",
-        "answer": "I found relevant sources, but I could not produce a reliable final answer.",
-        "refusal": true,
-        "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answer": "2024-2028 (Expected) [Pritheev_Resume.pdf:p1:c6]",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
-          "project_metrics.md:p1:c0",
-          "Pritheev_Resume.pdf:p1:c0",
-          "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c6",
+          "Pritheev_Resume.pdf:p1:c0",
+          "project_metrics.md:p1:c0",
+          "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c3",
           "Pritheev_Resume.pdf:p1:c2",
           "Pritheev_Resume.pdf:p1:c4",
@@ -510,28 +538,30 @@
           "Pritheev_Resume.pdf:p1:c1"
         ],
         "valid_citation": true,
-        "answer_matches_gold": false,
+        "citation_coverage": 0.1111111111111111,
+        "answer_matches_gold": true,
         "refusal_correct": false,
-        "false_refusal": true,
+        "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4796,
+        "llm_tokens_out": 8
       },
       {
         "id": "hal-6",
         "question": "Does the resume mention FastAPI?",
         "expected_behavior": "answer",
         "retrieval_mode": "hybrid",
-        "answer": "yes [project_metrics.md:p1:c0]",
+        "answer": "yes [Pritheev_Resume.pdf:p1:c1]",
         "refusal": false,
         "refusal_reason": "",
+        "answerability": "answerable",
         "source_ids": [
-          "project_metrics.md:p1:c0",
-          "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c1",
+          "project_metrics.md:p1:c1",
+          "project_metrics.md:p1:c0",
           "Pritheev_Resume.pdf:p1:c2",
           "Pritheev_Resume.pdf:p1:c5",
           "Pritheev_Resume.pdf:p1:c6",
@@ -540,24 +570,26 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.1111111111111111,
         "answer_matches_gold": true,
         "refusal_correct": false,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4796,
+        "llm_tokens_out": 1
       },
       {
         "id": "hal-7",
         "question": "What certifications are listed?",
         "expected_behavior": "answer",
         "retrieval_mode": "hybrid",
-        "answer": "Not available in the provided documents.",
-        "refusal": true,
-        "refusal_reason": "Retrieved evidence is ambiguous (top results too close); refusing to avoid unsupported answer.",
+        "answer": "DeepLearning.AI - NLP / LLM Fundamentals; Andrew Ng - Machine Learning; Oracle OCI 2025 - Generative AI Professional; IBM - AI Essentials V2 [project_metrics.md:p1:c1]",
+        "refusal": false,
+        "refusal_reason": "",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c1",
           "project_metrics.md:p1:c0",
@@ -570,15 +602,16 @@
           "Pritheev_Resume.pdf:p1:c5"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.1111111111111111,
         "answer_matches_gold": false,
         "refusal_correct": false,
-        "false_refusal": true,
-        "unsupported_claim": false,
-        "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "false_refusal": false,
+        "unsupported_claim": true,
+        "hallucinated": true,
+        "cost_usd": null,
+        "embedding_tokens": 5,
+        "llm_tokens_in": 4793,
+        "llm_tokens_out": 34
       },
       {
         "id": "hal-8",
@@ -588,27 +621,29 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "Pritheev_Resume.pdf:p1:c3",
+          "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c4",
           "Pritheev_Resume.pdf:p1:c6",
+          "Pritheev_Resume.pdf:p1:c2",
           "Pritheev_Resume.pdf:p1:c0",
           "Pritheev_Resume.pdf:p1:c5",
-          "Pritheev_Resume.pdf:p1:c2",
-          "Pritheev_Resume.pdf:p1:c1",
-          "project_metrics.md:p1:c1"
+          "Pritheev_Resume.pdf:p1:c1"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 7,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 15
       },
       {
         "id": "hal-9",
@@ -618,6 +653,7 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
@@ -630,15 +666,16 @@
           "Pritheev_Resume.pdf:p1:c3"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 8,
+        "llm_tokens_in": 4796,
+        "llm_tokens_out": 15
       },
       {
         "id": "hal-10",
@@ -648,27 +685,29 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "partially_answerable",
         "source_ids": [
           "project_metrics.md:p1:c0",
+          "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c4",
           "Pritheev_Resume.pdf:p1:c3",
           "Pritheev_Resume.pdf:p1:c1",
-          "Pritheev_Resume.pdf:p1:c5",
           "Pritheev_Resume.pdf:p1:c2",
+          "Pritheev_Resume.pdf:p1:c5",
           "Pritheev_Resume.pdf:p1:c0",
-          "Pritheev_Resume.pdf:p1:c6",
-          "project_metrics.md:p1:c1"
+          "Pritheev_Resume.pdf:p1:c6"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 8,
+        "llm_tokens_in": 4795,
+        "llm_tokens_out": 15
       },
       {
         "id": "hal-11",
@@ -678,8 +717,8 @@
         "answer": "I found relevant sources, but I could not produce a reliable final answer.",
         "refusal": true,
         "refusal_reason": "Generation backend unavailable and local fallback could not infer a safe answer.",
+        "answerability": "partially_answerable",
         "source_ids": [
-          "project_metrics.md:p1:c0",
           "project_metrics.md:p1:c1",
           "Pritheev_Resume.pdf:p1:c3",
           "Pritheev_Resume.pdf:p1:c4",
@@ -687,18 +726,20 @@
           "Pritheev_Resume.pdf:p1:c2",
           "Pritheev_Resume.pdf:p1:c5",
           "Pritheev_Resume.pdf:p1:c0",
-          "Pritheev_Resume.pdf:p1:c1"
+          "Pritheev_Resume.pdf:p1:c1",
+          "project_metrics.md:p1:c0"
         ],
         "valid_citation": true,
+        "citation_coverage": 0.0,
         "answer_matches_gold": false,
         "refusal_correct": true,
         "false_refusal": false,
         "unsupported_claim": false,
         "hallucinated": false,
-        "cost_usd": 0.0,
-        "embedding_tokens": 0,
-        "llm_tokens_in": 0,
-        "llm_tokens_out": 0
+        "cost_usd": null,
+        "embedding_tokens": 8,
+        "llm_tokens_in": 4796,
+        "llm_tokens_out": 15
       }
     ]
   }

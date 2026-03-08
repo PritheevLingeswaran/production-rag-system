@@ -1,98 +1,98 @@
 {
   "measured": true,
-  "label": "dense",
-  "mode": "dense",
+  "label": "hybrid_rrf",
+  "mode": "hybrid",
   "query_count": 12,
   "top_k": 10,
   "summary": {
     "n": 12,
-    "avg_latency_ms": 22.862,
-    "p50_latency_ms": 13.899,
-    "p95_latency_ms": 45.991,
-    "p99_latency_ms": 51.941
+    "avg_latency_ms": 12.541,
+    "p50_latency_ms": 13.755,
+    "p95_latency_ms": 15.394,
+    "p99_latency_ms": 16.074
   },
   "per_query": [
     {
       "id": "ret-1",
       "query": "How many source documents are indexed?",
-      "latency_ms": 0.004,
+      "latency_ms": 0.003,
       "query_used": "How many source documents are indexed?",
       "num_hits": 9
     },
     {
       "id": "ret-2",
       "query": "What is the vector DB size?",
-      "latency_ms": 10.699,
+      "latency_ms": 13.858,
       "query_used": "What is the vector DB size?",
       "num_hits": 9
     },
     {
       "id": "ret-3",
       "query": "Is CI/CD enabled in the project metrics?",
-      "latency_ms": 53.428,
+      "latency_ms": 14.699,
       "query_used": "Is CI/CD enabled in the project metrics?",
       "num_hits": 9
     },
     {
       "id": "ret-4",
       "query": "Is the project Dockerized?",
-      "latency_ms": 9.216,
+      "latency_ms": 13.848,
       "query_used": "Is the project Dockerized?",
       "num_hits": 9
     },
     {
       "id": "ret-5",
       "query": "What is the candidate's role mentioned in the resume?",
-      "latency_ms": 37.139,
+      "latency_ms": 16.244,
       "query_used": "What is the candidate's role mentioned in the resume?",
       "num_hits": 9
     },
     {
       "id": "ret-6",
       "query": "What is the candidate's education?",
-      "latency_ms": 39.907,
+      "latency_ms": 12.7,
       "query_used": "What is the candidate's education?",
       "num_hits": 9
     },
     {
       "id": "ret-7",
       "query": "What is the expected graduation period?",
-      "latency_ms": 12.071,
+      "latency_ms": 11.895,
       "query_used": "What is the expected graduation period?",
       "num_hits": 9
     },
     {
       "id": "ret-8",
       "query": "What certifications are listed?",
-      "latency_ms": 34.549,
+      "latency_ms": 13.662,
       "query_used": "What certifications are listed?",
       "num_hits": 9
     },
     {
       "id": "ret-9",
       "query": "Does the resume mention FastAPI?",
-      "latency_ms": 14.959,
+      "latency_ms": 12.696,
       "query_used": "Does the resume mention FastAPI?",
       "num_hits": 9
     },
     {
       "id": "ret-10",
       "query": "Does the resume mention vector databases?",
-      "latency_ms": 12.84,
+      "latency_ms": 11.597,
       "query_used": "Does the resume mention vector databases?",
       "num_hits": 9
     },
     {
       "id": "ret-11",
       "query": "How many projects are there in the resume?",
-      "latency_ms": 38.915,
+      "latency_ms": 14.63,
       "query_used": "How many projects are there in the resume?",
       "num_hits": 9
     },
     {
       "id": "ret-12",
       "query": "What is the third project name?",
-      "latency_ms": 10.62,
+      "latency_ms": 14.663,
       "query_used": "What is the third project name?",
       "num_hits": 9
     }

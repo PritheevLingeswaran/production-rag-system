@@ -1,0 +1,25 @@
+{
+  "measured": true,
+  "baseline_dense": {
+    "false_refusal_rate": 0.0,
+    "refusal_correctness_rate": 1.0,
+    "supported_answer_rate": 0.0,
+    "citation_coverage": 0.0,
+    "answerability_breakdown": {
+      "answerable": 5,
+      "partially_answerable": 6,
+      "not_answerable": 0
+    }
+  },
+  "strict_grounded_hybrid": {
+    "false_refusal_rate": 0.0,
+    "refusal_correctness_rate": 1.0,
+    "supported_answer_rate": 0.7143,
+    "citation_coverage": 0.1111,
+    "answerability_breakdown": {
+      "answerable": 6,
+      "partially_answerable": 5,
+      "not_answerable": 0
+    }
+  }
+}

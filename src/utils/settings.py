@@ -16,6 +16,21 @@ class PathsConfig(BaseModel):
 
 class IngestionConfig(BaseModel):
     supported_extensions: list[str] = Field(default_factory=lambda: [".pdf", ".txt", ".md"])
+    deduplicate_documents: bool = True
+    max_document_chars: int = 500_000
+
+
+class BM25Config(BaseModel):
+    lowercase: bool = True
+    strip_punctuation: bool = True
+    remove_stopwords: bool = True
+    stemming: bool = False
+    min_token_length: int = 2
+
+
+class RetrievalCacheConfig(BaseModel):
+    enabled: bool = True
+    max_entries: int = 256
 
 
 class CleaningConfig(BaseModel):
@@ -90,21 +105,39 @@ class QueryRewriteConfig(BaseModel):
 
 class HybridConfig(BaseModel):
     enabled: bool = False
+    fusion_method: Literal["weighted", "rrf"] = "weighted"
     # Number of BM25 candidates to retrieve from the *full corpus*.
     bm25_k: int = 200
     # Number of dense candidates to retrieve (typically >= top_k).
     dense_k: int = 40
     # Fusion weight: final_score = dense_weight * dense + (1-dense_weight) * bm25
     dense_weight: float = 0.65
+    rrf_k: int = 60
+    min_dense_score: float = 0.0
+    min_sparse_score: float = 0.0
 
 
 class RerankConfig(BaseModel):
     enabled: bool = False
+    provider: Literal["lexical", "cross_encoder"] = "lexical"
     model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    query_weight: float = 0.6
+    retrieval_weight: float = 0.4
+    min_query_term_coverage: float = 0.1
+
+
+class AnswerabilityConfig(BaseModel):
+    answerable_top_score: float = 0.3
+    partial_top_score: float = 0.18
+    evidence_score_threshold: float = 0.16
+    min_supporting_hits: int = 1
+    min_query_term_coverage: float = 0.2
 
 
 class RetrievalConfig(BaseModel):
     query_rewrite: QueryRewriteConfig = Field(default_factory=QueryRewriteConfig)
+    bm25: BM25Config = Field(default_factory=BM25Config)
+    cache: RetrievalCacheConfig = Field(default_factory=RetrievalCacheConfig)
     hybrid: HybridConfig = Field(default_factory=HybridConfig)
     rerank: RerankConfig = Field(default_factory=RerankConfig)
     min_score: float = 0.2
@@ -113,11 +146,19 @@ class RetrievalConfig(BaseModel):
     debug_top_n: int = 5
 
 
+class GenerationPricingConfig(BaseModel):
+    input_usd_per_1k_tokens: float | None = None
+    output_usd_per_1k_tokens: float | None = None
+    pricing_source: str | None = None
+
+
 class GenerationConfig(BaseModel):
     model: str = "gpt-4o-mini"
     temperature: float = 0.0
     max_output_tokens: int = 700
     strict_refusal: bool = True
+    answerability: AnswerabilityConfig = Field(default_factory=AnswerabilityConfig)
+    pricing: GenerationPricingConfig = Field(default_factory=GenerationPricingConfig)
 
 
 class CorsConfig(BaseModel):
@@ -130,6 +171,7 @@ class APIConfig(BaseModel):
     reload: bool = True
     cors: CorsConfig = Field(default_factory=CorsConfig)
     enable_debug_retrieval_endpoint: bool = False
+    request_timeout_s: float = 60.0
 
 
 class PrometheusConfig(BaseModel):

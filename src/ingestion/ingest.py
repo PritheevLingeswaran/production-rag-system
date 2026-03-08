@@ -30,6 +30,10 @@ def _chunk_id(source: str, page: int, idx: int) -> str:
     return f"{base}:p{page}:c{idx}"
 
 
+def _sanitize_metadata_value(value: str) -> str:
+    return " ".join(value.replace("\x00", " ").split())
+
+
 def _pages_from_path(path: Path) -> list[Page]:
     if path.suffix.lower() == ".pdf":
         return cast(list[Page], load_pdf(path))
@@ -43,8 +47,21 @@ def ingest_documents(settings: Settings) -> list[Chunk]:
     log.info("ingest.scan", raw_dir=settings.paths.raw_dir, num_files=len(docs))
 
     chunks: list[Chunk] = []
+    seen_doc_hashes: set[str] = set()
     for doc in docs:
-        pages = _pages_from_path(doc)
+        try:
+            pages = _pages_from_path(doc)
+        except Exception as exc:
+            log.warning("ingest.skip_document", source=str(doc), error=str(exc))
+            continue
+        raw_doc_text = "\n".join(page.text for page in pages)
+        if len(raw_doc_text) > int(settings.ingestion.max_document_chars):
+            raw_doc_text = raw_doc_text[: int(settings.ingestion.max_document_chars)]
+        doc_hash = sha256_text(raw_doc_text)
+        if settings.ingestion.deduplicate_documents and doc_hash in seen_doc_hashes:
+            log.info("ingest.skip_duplicate", source=str(doc), text_sha256=doc_hash)
+            continue
+        seen_doc_hashes.add(doc_hash)
         page_chunks = preprocess_pages_to_chunks(settings, pages)
         for page_num, idx, text in page_chunks:
             cid = _chunk_id(str(doc), page_num, idx)
@@ -55,7 +72,11 @@ def ingest_documents(settings: Settings) -> list[Chunk]:
                     page=page_num,
                     text=text,
                     text_sha256=sha256_text(text),
-                    metadata={"source_name": doc.name},
+                    metadata={
+                        "source_name": _sanitize_metadata_value(doc.name),
+                        "source_path": _sanitize_metadata_value(str(doc)),
+                        "document_sha256": doc_hash,
+                    },
                 )
             )
 

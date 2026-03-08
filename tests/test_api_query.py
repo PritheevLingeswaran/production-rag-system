@@ -49,9 +49,11 @@ class DummyAnswerer:
                     )
                 ],
                 "refusal": Refusal(is_refusal=False, reason=""),
-                "llm_tokens_in": 0,
-                "llm_tokens_out": 0,
-                "llm_cost_usd": 0.0,
+                "llm_tokens_in": None,
+                "llm_tokens_out": None,
+                "llm_cost_usd": None,
+                "answerability": "answerable",
+                "citation_coverage": 1.0,
             },
         )
 

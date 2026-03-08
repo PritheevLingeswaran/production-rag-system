@@ -1,0 +1,15 @@
+{
+  "measured": true,
+  "llm_cost_measured": false,
+  "pricing_source": {
+    "embedding": "settings.embeddings.openai.usd_per_1k_tokens for remote embeddings; null for local embeddings",
+    "generation": "settings.generation.pricing for remote generation; null when running offline fallback"
+  },
+  "summary": {
+    "avg_embedding_tokens_per_query": 7.3636,
+    "avg_input_tokens_per_query": 4795.3636,
+    "avg_output_tokens_per_query": 15.7273,
+    "avg_cost_per_query_usd": null,
+    "total_cost_usd": null
+  }
+}

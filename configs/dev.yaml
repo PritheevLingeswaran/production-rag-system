@@ -12,16 +12,32 @@ embeddings:
   provider: sentence_transformers
   model: all-MiniLM-L6-v2
   batch_size: 32
+  sentence_transformers:
+    model_name: all-MiniLM-L6-v2
+    local_files_only: true
 
 retrieval:
-  min_score: 0.18
-  refuse_if_top_score_below: 0.20
-  refuse_if_top_gap_below: 0.01
+  min_score: 0.12
+  refuse_if_top_score_below: 0.18
+  refuse_if_top_gap_below: 0.0
   hybrid:
     enabled: true
-    dense_weight: 0.65
+    fusion_method: rrf
+    dense_weight: 0.6
     dense_k: 50
     bm25_k: 250
+    rrf_k: 30
   rerank:
+    enabled: false
+    provider: lexical
+  cache:
     enabled: true
-    model_name: cross-encoder/ms-marco-MiniLM-L-6-v2
+    max_entries: 512
+
+generation:
+  answerability:
+    answerable_top_score: 0.22
+    partial_top_score: 0.12
+    evidence_score_threshold: 0.1
+    min_supporting_hits: 1
+    min_query_term_coverage: 0.15

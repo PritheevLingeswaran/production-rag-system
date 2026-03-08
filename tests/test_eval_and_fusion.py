@@ -34,6 +34,7 @@ def test_apply_min_score_cutoff_falls_back_to_unfiltered_when_all_removed() -> N
 def test_fusion_ranking_deterministic_order() -> None:
     settings = Settings()
     settings.retrieval.hybrid.dense_weight = 0.6
+    settings.retrieval.hybrid.fusion_method = "weighted"
     retriever = Retriever.__new__(Retriever)
     retriever.settings = settings
 
@@ -47,7 +48,7 @@ def test_fusion_ranking_deterministic_order() -> None:
     ]
     chunk_by_id = {"a": _chunk("a"), "b": _chunk("b"), "c": _chunk("c")}
 
-    fused = retriever._fuse_dense_and_sparse(
+    fused, debug = retriever._fuse_dense_and_sparse(
         dense_hits=dense_hits,
         sparse_hits=sparse_hits,
         chunk_by_id=chunk_by_id,
@@ -58,3 +59,32 @@ def test_fusion_ranking_deterministic_order() -> None:
     # b = 0.6*0.2 + 0.4*1.0 = 0.52
     # c = 0.6*0.0 + 0.4*0.5 = 0.20
     assert [h.chunk.chunk_id for h in fused] == ["a", "b", "c"]
+    assert debug["fusion_method"] == "weighted"
+
+
+def test_rrf_fusion_can_promote_sparse_hit_without_dense_score() -> None:
+    settings = Settings()
+    settings.retrieval.hybrid.fusion_method = "rrf"
+    settings.retrieval.hybrid.rrf_k = 10
+    retriever = Retriever.__new__(Retriever)
+    retriever.settings = settings
+
+    dense_hits = [
+        SearchHit(chunk=_chunk("a"), score=0.9),
+        SearchHit(chunk=_chunk("b"), score=0.8),
+    ]
+    sparse_hits = [
+        BM25DocHit(idx=0, chunk_id="c", score=8.0),
+        BM25DocHit(idx=1, chunk_id="b", score=7.5),
+    ]
+    chunk_by_id = {"a": _chunk("a"), "b": _chunk("b"), "c": _chunk("c")}
+
+    fused, debug = retriever._fuse_dense_and_sparse(
+        dense_hits=dense_hits,
+        sparse_hits=sparse_hits,
+        chunk_by_id=chunk_by_id,
+        top_k=3,
+    )
+
+    assert debug["fusion_method"] == "rrf"
+    assert "c" in [h.chunk.chunk_id for h in fused]

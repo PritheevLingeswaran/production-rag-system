@@ -1,14 +1,14 @@
 # Resume Bullets
 
 ## Short Bullet
-- Built a hybrid RAG system with reproducible evaluation (2 documents / 9 chunks; 8.058 ms p95 hybrid retrieval latency).
+- Built a reproducible hybrid RAG evaluation pipeline (2 indexed documents / 9 chunks).
 
 ## Strong Bullet
-- Implemented a reproducible dense-vs-hybrid RAG evaluation pipeline: hallucination rate changed by -0.2727, hybrid p95 latency 8.058 ms.
+- Implemented dense-vs-hybrid RAG benchmarking with retrieval diagnostics, refusal evaluation, and cost tracking.
 
 ## Senior/Staff-Style Bullet
-- Productionized measurement for a hybrid RAG stack with code-generated resume metrics, covering corpus size, dense-vs-hybrid retrieval quality, and offline hallucination checks (2 documents / 9 chunks; 8.058 ms p95 hybrid retrieval latency).
+- Productionized measurement for a grounded RAG stack with code-generated evidence for corpus scale, retrieval quality, answer support, and latency (2 indexed documents / 9 chunks).
 
 ## Claim Boundaries
 - These bullets include only values written into `experiments/metrics/resume_metrics.json` by code execution.
-- No throughput or RPS claim is included because resume metrics omit it unless explicitly measured and selected.
+- Null fields in `resume_metrics.json` must not be turned into resume claims.

@@ -4,14 +4,31 @@
   "chunks_indexed": 9,
   "vectors_indexed": 9,
   "raw_documents_present": 2,
+  "index_sizes_bytes": {
+    "vector_index": 815268,
+    "bm25_index": 6836,
+    "chunks_file": 12883
+  },
   "paths": {
     "chunks": "data/processed/chunks/chunks.jsonl",
     "vector_index": "data/processed/indexes/chroma",
     "bm25_index": "data/processed/indexes/bm25"
   },
-  "index_sizes_bytes": {
-    "vector_index": 725156,
-    "bm25_index": 9575,
-    "chunks_file": 11589
+  "limitations": "Measured corpus size is limited by the files currently present under data/raw/documents.",
+  "evaluation_datasets": {
+    "retrieval": {
+      "valid": true,
+      "example_count": 12,
+      "errors": []
+    },
+    "hallucination": {
+      "valid": true,
+      "example_count": 11,
+      "label_counts": {
+        "answer": 7,
+        "refuse": 4
+      },
+      "errors": []
+    }
   }
 }

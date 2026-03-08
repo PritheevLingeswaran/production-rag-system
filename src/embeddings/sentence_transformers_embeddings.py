@@ -3,6 +3,7 @@ from __future__ import annotations
 from sentence_transformers import SentenceTransformer
 
 from embeddings.base import EmbeddingsBackend, EmbedResult
+from utils.token_counting import estimate_batch_tokens
 from utils.settings import EmbeddingsConfig
 
 
@@ -25,7 +26,11 @@ class SentenceTransformersEmbeddingsBackend(EmbeddingsBackend):
 
     def embed_texts(self, texts: list[str]) -> EmbedResult:
         vecs = self.model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
-        return EmbedResult(vectors=vecs.tolist(), total_tokens=0, cost_usd=0.0)
+        return EmbedResult(
+            vectors=vecs.tolist(),
+            total_tokens=estimate_batch_tokens(texts, model="cl100k_base"),
+            cost_usd=0.0,
+        )
 
     def embed_query(self, text: str) -> EmbedResult:
         return self.embed_texts([text])

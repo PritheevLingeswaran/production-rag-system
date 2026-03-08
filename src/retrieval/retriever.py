@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections import OrderedDict
 from pathlib import Path
 from typing import Literal
 
@@ -8,7 +9,7 @@ from embeddings.factory import build_embeddings_backend
 from retrieval.bm25 import BM25DocHit, BM25PersistentIndex
 from retrieval.corpus import load_chunks_jsonl
 from retrieval.query_rewrite import rewrite_query
-from retrieval.rerank import CrossEncoderReranker
+from retrieval.rerank import build_reranker_from_config
 from retrieval.vector_store import IndexedChunk, SearchHit, VectorStore
 from utils.logging import get_logger
 from utils.openai_client import OpenAIClient
@@ -72,6 +73,7 @@ class Retriever:
         # Lazy-loaded sparse resources (only when hybrid retrieval is used).
         self._bm25: BM25PersistentIndex | None = None
         self._chunk_by_id: dict[str, IndexedChunk] | None = None
+        self._query_cache: OrderedDict[tuple[object, ...], RetrievalOutput] = OrderedDict()
 
     def _lazy_load_bm25_and_corpus(self) -> tuple[BM25PersistentIndex, dict[str, IndexedChunk]]:
         if self._bm25 is None:
@@ -92,7 +94,7 @@ class Retriever:
         sparse_hits: list[BM25DocHit],
         chunk_by_id: dict[str, IndexedChunk],
         top_k: int,
-    ) -> list[SearchHit]:
+    ) -> tuple[list[SearchHit], dict[str, object]]:
         cfg = self.settings.retrieval.hybrid
 
         # Dense scores are already in [0,1]. Sparse scores are normalized to [0,1].
@@ -108,10 +110,25 @@ class Retriever:
         candidate_ids = set(dense_map.keys()) | set(sparse_norm.keys())
 
         fused: list[SearchHit] = []
+        explanation: dict[str, object] = {
+            "fusion_method": cfg.fusion_method,
+            "candidate_count": len(candidate_ids),
+            "rrf_k": int(cfg.rrf_k),
+            "dense_weight": alpha,
+        }
+        dense_rank = {h.chunk.chunk_id: idx for idx, h in enumerate(dense_hits, start=1)}
+        sparse_rank = {h.chunk_id: idx for idx, h in enumerate(sparse_hits, start=1)}
         for cid in candidate_ids:
             d = dense_map.get(cid, 0.0)
             s = sparse_norm.get(cid, 0.0)
-            fused_score = alpha * d + (1.0 - alpha) * s
+            if cfg.fusion_method == "rrf":
+                fused_score = 0.0
+                if cid in dense_rank:
+                    fused_score += 1.0 / (float(cfg.rrf_k) + float(dense_rank[cid]))
+                if cid in sparse_rank:
+                    fused_score += 1.0 / (float(cfg.rrf_k) + float(sparse_rank[cid]))
+            else:
+                fused_score = alpha * d + (1.0 - alpha) * s
 
             # Prefer the chunk object already returned by dense retrieval; otherwise load from corpus.
             chunk = dense_chunks.get(cid) or chunk_by_id.get(cid)
@@ -121,7 +138,25 @@ class Retriever:
             fused.append(SearchHit(chunk=chunk, score=float(fused_score)))
 
         fused.sort(key=lambda x: float(x.score), reverse=True)
-        return fused[:top_k]
+        return fused[:top_k], explanation
+
+    def _get_cached(self, key: tuple[object, ...]) -> RetrievalOutput | None:
+        if not self.settings.retrieval.cache.enabled:
+            return None
+        cached = self._query_cache.get(key)
+        if cached is None:
+            return None
+        self._query_cache.move_to_end(key)
+        return cached
+
+    def _set_cached(self, key: tuple[object, ...], value: RetrievalOutput) -> None:
+        if not self.settings.retrieval.cache.enabled:
+            return
+        self._query_cache[key] = value
+        self._query_cache.move_to_end(key)
+        max_entries = int(self.settings.retrieval.cache.max_entries)
+        while len(self._query_cache) > max_entries:
+            self._query_cache.popitem(last=False)
 
     def _bm25_only_hits(
         self,
@@ -205,6 +240,19 @@ class Retriever:
         query = (
             rewrite_query(self.settings, self.rewrite_client, question) if do_rewrite else question
         )
+        cache_key = (
+            mode,
+            query,
+            int(top_k),
+            filter_source_substr or "",
+            bool(do_rewrite),
+            self.settings.retrieval.hybrid.fusion_method,
+            self.settings.retrieval.rerank.enabled,
+            self.settings.retrieval.rerank.provider,
+        )
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
         debug: dict[str, object] = {
             "mode": mode,
             "question": question,
@@ -214,6 +262,7 @@ class Retriever:
             "threshold_min_score": float(self.settings.retrieval.min_score),
             "stage_counts": {},
             "top_scores": {},
+            "top_ids": {},
         }
         log.info(
             "retrieval.query_rewrite",
@@ -235,6 +284,10 @@ class Retriever:
                 "final_hits": len(hits),
             }
             debug["top_scores"] = {"bm25": top_scores, "final": top_scores}
+            debug["top_ids"] = {
+                "bm25": [h.chunk.chunk_id for h in hits[: self.settings.retrieval.debug_top_n]],
+                "final": [h.chunk.chunk_id for h in hits[: self.settings.retrieval.debug_top_n]],
+            }
             debug["threshold_applied"] = threshold_applied
             log.info(
                 "retrieval.final",
@@ -244,13 +297,15 @@ class Retriever:
                 num_hits=len(hits),
                 top_scores=top_scores,
             )
-            return RetrievalOutput(
+            output = RetrievalOutput(
                 query_used=query,
                 hits=hits,
                 embedding_tokens=0,
                 embedding_cost_usd=0.0,
                 debug=debug,
             )
+            self._set_cached(cache_key, output)
+            return output
 
         # Dense retrieval always happens (we need embeddings anyway to answer). We can still reduce
         # dense candidates in hybrid if you want, but in practice a slightly larger dense_k improves stability.
@@ -274,6 +329,9 @@ class Retriever:
         )
         debug["stage_counts"] = {"dense_hits": len(dense_hits)}
         debug["top_scores"] = {"dense": dense_top_scores}
+        debug["top_ids"] = {
+            "dense": [h.chunk.chunk_id for h in dense_hits[: self.settings.retrieval.debug_top_n]]
+        }
 
         hits = dense_hits[:top_k]
 
@@ -288,6 +346,11 @@ class Retriever:
 
             sparse_k = int(self.settings.retrieval.hybrid.bm25_k)
             sparse_hits = bm25.query(query, top_k=max(int(top_k), sparse_k), filter_fn=_filter_fn)
+            sparse_hits = [
+                hit
+                for hit in sparse_hits
+                if float(hit.score) >= float(self.settings.retrieval.hybrid.min_sparse_score)
+            ]
             sparse_norm = _normalize_bm25(sparse_hits)
             sparse_top_scores = [
                 round(float(sparse_norm.get(h.chunk_id, 0.0)), 6)
@@ -301,7 +364,7 @@ class Retriever:
                 top_scores=sparse_top_scores,
             )
 
-            hits = self._fuse_dense_and_sparse(
+            hits, fusion_debug = self._fuse_dense_and_sparse(
                 dense_hits=dense_hits,
                 sparse_hits=sparse_hits,
                 chunk_by_id=chunk_by_id,
@@ -320,11 +383,23 @@ class Retriever:
             debug["stage_counts"]["fusion_hits"] = len(hits)
             debug["top_scores"]["bm25"] = sparse_top_scores
             debug["top_scores"]["fusion"] = fusion_top_scores
+            debug["top_ids"]["bm25"] = [
+                h.chunk_id for h in sparse_hits[: self.settings.retrieval.debug_top_n]
+            ]
+            debug["top_ids"]["fusion"] = [
+                h.chunk.chunk_id for h in hits[: self.settings.retrieval.debug_top_n]
+            ]
+            debug["fusion"] = fusion_debug
 
         # Optional reranker runs *after* fusion (so it can improve precision of the hybrid union).
         if self.settings.retrieval.rerank.enabled and hits:
-            rr = CrossEncoderReranker(self.settings.retrieval.rerank.model_name)
-            reranked = rr.rerank(query, [h.chunk.text for h in hits], top_k=top_k)
+            rr = build_reranker_from_config(self.settings.retrieval.rerank)
+            reranked = rr.rerank(
+                query,
+                [h.chunk.text for h in hits],
+                base_scores=[float(h.score) for h in hits],
+                top_k=top_k,
+            )
             hits = [
                 SearchHit(chunk=hits[r.idx].chunk, score=min(1.0, max(0.0, float(r.score))))
                 for r in reranked
@@ -340,6 +415,9 @@ class Retriever:
             )
             debug["stage_counts"]["rerank_hits"] = len(hits)
             debug["top_scores"]["rerank"] = rerank_top_scores
+            debug["top_ids"]["rerank"] = [
+                h.chunk.chunk_id for h in hits[: self.settings.retrieval.debug_top_n]
+            ]
 
         # Min-score cutoff.
         hits, threshold_applied = self._apply_min_score_cutoff(
@@ -359,13 +437,18 @@ class Retriever:
         )
         debug["stage_counts"]["final_hits"] = len(hits)
         debug["top_scores"]["final"] = final_top_scores
+        debug["top_ids"]["final"] = [
+            h.chunk.chunk_id for h in hits[: self.settings.retrieval.debug_top_n]
+        ]
         debug["threshold_applied"] = threshold_applied
         debug["embedding_tokens"] = int(emb.total_tokens)
 
-        return RetrievalOutput(
+        output = RetrievalOutput(
             query_used=query,
             hits=hits,
             embedding_tokens=emb.total_tokens,
             embedding_cost_usd=emb.cost_usd,
             debug=debug,
         )
+        self._set_cached(cache_key, output)
+        return output

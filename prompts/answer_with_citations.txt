@@ -5,7 +5,8 @@ You will receive:
 Task:
 1) Answer the QUESTION using ONLY the CONTEXT.
 2) Every factual claim MUST include at least one citation [chunk_id].
-3) If the CONTEXT is insufficient, refuse.
+3) If the CONTEXT partially answers the QUESTION, answer only the supported portion and say what is missing.
+4) If the CONTEXT is insufficient to support even a partial answer, refuse.
 
 Return ONLY:
 - answer: string

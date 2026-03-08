@@ -7,1115 +7,320 @@
     5,
     10
   ],
-  "summary_by_k": {
-    "1": {
-      "precision_dense": 0.3333,
-      "precision_hybrid": 0.1667,
-      "recall_dense": 0.3333,
-      "recall_hybrid": 0.1667,
-      "hit_rate_dense": 0.3333,
-      "hit_rate_hybrid": 0.1667
+  "modes": {
+    "dense": {
+      "mrr": 0.4986,
+      "summary_by_k": {
+        "1": {
+          "precision": 0.3333,
+          "recall": 0.3333,
+          "hit_rate": 0.3333
+        },
+        "3": {
+          "precision": 0.1667,
+          "recall": 0.4583,
+          "hit_rate": 0.5
+        },
+        "5": {
+          "precision": 0.2,
+          "recall": 0.7708,
+          "hit_rate": 0.9167
+        },
+        "10": {
+          "precision": 0.1667,
+          "recall": 1.0,
+          "hit_rate": 1.0
+        }
+      }
     },
-    "3": {
-      "precision_dense": 0.1667,
-      "precision_hybrid": 0.1667,
-      "recall_dense": 0.4583,
-      "recall_hybrid": 0.4583,
-      "hit_rate_dense": 0.5,
-      "hit_rate_hybrid": 0.5
+    "hybrid_weighted": {
+      "mrr": 0.5333,
+      "summary_by_k": {
+        "1": {
+          "precision": 0.3333,
+          "recall": 0.2917,
+          "hit_rate": 0.3333
+        },
+        "3": {
+          "precision": 0.1944,
+          "recall": 0.5417,
+          "hit_rate": 0.5833
+        },
+        "5": {
+          "precision": 0.2,
+          "recall": 0.7708,
+          "hit_rate": 0.9167
+        },
+        "10": {
+          "precision": 0.1667,
+          "recall": 1.0,
+          "hit_rate": 1.0
+        }
+      }
     },
-    "5": {
-      "precision_dense": 0.2,
-      "precision_hybrid": 0.2,
-      "recall_dense": 0.7708,
-      "recall_hybrid": 0.7708,
-      "hit_rate_dense": 0.9167,
-      "hit_rate_hybrid": 0.9167
+    "hybrid_rrf": {
+      "mrr": 0.5625,
+      "summary_by_k": {
+        "1": {
+          "precision": 0.3333,
+          "recall": 0.2917,
+          "hit_rate": 0.3333
+        },
+        "3": {
+          "precision": 0.2778,
+          "recall": 0.6458,
+          "hit_rate": 0.75
+        },
+        "5": {
+          "precision": 0.1667,
+          "recall": 0.6458,
+          "hit_rate": 0.75
+        },
+        "10": {
+          "precision": 0.1667,
+          "recall": 1.0,
+          "hit_rate": 1.0
+        }
+      }
     },
-    "10": {
-      "precision_dense": 0.1667,
-      "precision_hybrid": 0.1667,
-      "recall_dense": 1.0,
-      "recall_hybrid": 1.0,
-      "hit_rate_dense": 1.0,
-      "hit_rate_hybrid": 1.0
+    "hybrid_rrf_reranked": {
+      "mrr": 0.5486,
+      "summary_by_k": {
+        "1": {
+          "precision": 0.4167,
+          "recall": 0.375,
+          "hit_rate": 0.4167
+        },
+        "3": {
+          "precision": 0.4722,
+          "recall": 0.5625,
+          "hit_rate": 0.6667
+        },
+        "5": {
+          "precision": 0.45,
+          "recall": 0.5625,
+          "hit_rate": 0.6667
+        },
+        "10": {
+          "precision": 0.4815,
+          "recall": 0.7917,
+          "hit_rate": 0.8333
+        }
+      }
     }
   },
-  "mrr_dense": 0.4986,
-  "mrr_hybrid": 0.4111,
-  "improved_recall_examples": {
-    "1": [],
-    "3": [],
-    "5": [],
-    "10": []
-  },
-  "hurt_precision_examples": {
-    "1": [
-      {
-        "id": "ret-3",
-        "query": "Is CI/CD enabled in the project metrics?",
-        "delta_precision": -1.0
+  "comparisons_vs_dense": {
+    "hybrid_weighted": {
+      "improved_recall_examples": {
+        "1": [
+          {
+            "id": "ret-7",
+            "query": "What is the expected graduation period?",
+            "delta_recall": 1.0
+          },
+          {
+            "id": "ret-9",
+            "query": "Does the resume mention FastAPI?",
+            "delta_recall": 0.5
+          }
+        ],
+        "3": [
+          {
+            "id": "ret-7",
+            "query": "What is the expected graduation period?",
+            "delta_recall": 1.0
+          }
+        ],
+        "5": [],
+        "10": []
       },
-      {
-        "id": "ret-4",
-        "query": "Is the project Dockerized?",
-        "delta_precision": -1.0
-      }
-    ],
-    "3": [],
-    "5": [],
-    "10": []
-  },
-  "per_example": [
-    {
-      "id": "ret-1",
-      "query": "How many source documents are indexed?",
-      "relevant_chunk_ids": [
-        "project_metrics.md:p1:c0"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c2"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c2"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 1.0,
-            "recall": 1.0,
-            "mrr": 1.0
+      "hurt_precision_examples": {
+        "1": [
+          {
+            "id": "ret-3",
+            "query": "Is CI/CD enabled in the project metrics?",
+            "delta_precision": -1.0
           },
-          "hybrid": {
-            "precision": 1.0,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
+          {
+            "id": "ret-4",
+            "query": "Is the project Dockerized?",
+            "delta_precision": -1.0
+          }
+        ],
+        "3": [],
+        "5": [],
+        "10": []
       }
     },
-    {
-      "id": "ret-2",
-      "query": "What is the vector DB size?",
-      "relevant_chunk_ids": [
-        "project_metrics.md:p1:c0"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 1.0,
-            "recall": 1.0,
-            "mrr": 1.0
+    "hybrid_rrf": {
+      "improved_recall_examples": {
+        "1": [
+          {
+            "id": "ret-5",
+            "query": "What is the candidate's role mentioned in the resume?",
+            "delta_recall": 1.0
           },
-          "hybrid": {
-            "precision": 1.0,
-            "recall": 1.0,
-            "mrr": 1.0
+          {
+            "id": "ret-9",
+            "query": "Does the resume mention FastAPI?",
+            "delta_recall": 0.5
+          }
+        ],
+        "3": [
+          {
+            "id": "ret-7",
+            "query": "What is the expected graduation period?",
+            "delta_recall": 1.0
           },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 1.0
+          {
+            "id": "ret-10",
+            "query": "Does the resume mention vector databases?",
+            "delta_recall": 1.0
           },
-          "hybrid": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 1.0
+          {
+            "id": "ret-11",
+            "query": "How many projects are there in the resume?",
+            "delta_recall": 0.25
+          }
+        ],
+        "5": [],
+        "10": []
+      },
+      "hurt_precision_examples": {
+        "1": [
+          {
+            "id": "ret-3",
+            "query": "Is CI/CD enabled in the project metrics?",
+            "delta_precision": -1.0
           },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 1.0
+          {
+            "id": "ret-4",
+            "query": "Is the project Dockerized?",
+            "delta_precision": -1.0
+          }
+        ],
+        "3": [],
+        "5": [
+          {
+            "id": "ret-6",
+            "query": "What is the candidate's education?",
+            "delta_precision": -0.2
           },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
+          {
+            "id": "ret-12",
+            "query": "What is the third project name?",
+            "delta_precision": -0.2
+          }
+        ],
+        "10": []
       }
     },
-    {
-      "id": "ret-3",
-      "query": "Is CI/CD enabled in the project metrics?",
-      "relevant_chunk_ids": [
-        "project_metrics.md:p1:c1"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 1.0,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-4",
-      "query": "Is the project Dockerized?",
-      "relevant_chunk_ids": [
-        "project_metrics.md:p1:c1"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c5"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c5"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 1.0,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 1.0
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.5
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-5",
-      "query": "What is the candidate's role mentioned in the resume?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c0"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c2"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c2"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.3333,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-6",
-      "query": "What is the candidate's education?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c6"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c5"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c5",
-        "project_metrics.md:p1:c1"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-7",
-      "query": "What is the expected graduation period?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c6"
-      ],
-      "dense_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c0",
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c1"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c1"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-8",
-      "query": "What certifications are listed?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c6"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c5"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c5"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.1667
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.1667
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.1667
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.1667
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.1667
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.1667
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.1667
-          },
-          "hybrid": {
-            "precision": 0.1111,
-            "recall": 1.0,
-            "mrr": 0.1667
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-9",
-      "query": "Does the resume mention FastAPI?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c4"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.3333,
-            "recall": 0.5,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.3333,
-            "recall": 0.5,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 0.5,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 0.5,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.2222,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "hybrid": {
-            "precision": 0.2222,
-            "recall": 1.0,
-            "mrr": 0.3333
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-10",
-      "query": "Does the resume mention vector databases?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c1"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c6"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c6"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.4,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.4,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.2222,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "hybrid": {
-            "precision": 0.2222,
-            "recall": 1.0,
-            "mrr": 0.25
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-11",
-      "query": "How many projects are there in the resume?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c5"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c1",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c3"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 0.25,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 0.25,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.4444,
-            "recall": 1.0,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.4444,
-            "recall": 1.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
-      }
-    },
-    {
-      "id": "ret-12",
-      "query": "What is the third project name?",
-      "relevant_chunk_ids": [
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c5"
-      ],
-      "dense_chunk_ids": [
-        "project_metrics.md:p1:c1",
-        "project_metrics.md:p1:c0",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c1"
-      ],
-      "hybrid_chunk_ids": [
-        "project_metrics.md:p1:c0",
-        "project_metrics.md:p1:c1",
-        "Pritheev_Resume.pdf:p1:c6",
-        "Pritheev_Resume.pdf:p1:c0",
-        "Pritheev_Resume.pdf:p1:c4",
-        "Pritheev_Resume.pdf:p1:c3",
-        "Pritheev_Resume.pdf:p1:c2",
-        "Pritheev_Resume.pdf:p1:c5",
-        "Pritheev_Resume.pdf:p1:c1"
-      ],
-      "metrics_by_k": {
-        "1": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "3": {
-          "dense": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 0.0,
-          "hybrid_hit_rate": 0.0
-        },
-        "5": {
-          "dense": {
-            "precision": 0.2,
-            "recall": 0.5,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.2,
-            "recall": 0.5,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        },
-        "10": {
-          "dense": {
-            "precision": 0.2222,
-            "recall": 1.0,
-            "mrr": 0.2
-          },
-          "hybrid": {
-            "precision": 0.2222,
-            "recall": 1.0,
-            "mrr": 0.2
-          },
-          "dense_hit_rate": 1.0,
-          "hybrid_hit_rate": 1.0
-        }
+    "hybrid_rrf_reranked": {
+      "improved_recall_examples": {
+        "1": [
+          {
+            "id": "ret-5",
+            "query": "What is the candidate's role mentioned in the resume?",
+            "delta_recall": 1.0
+          },
+          {
+            "id": "ret-7",
+            "query": "What is the expected graduation period?",
+            "delta_recall": 1.0
+          },
+          {
+            "id": "ret-9",
+            "query": "Does the resume mention FastAPI?",
+            "delta_recall": 0.5
+          }
+        ],
+        "3": [
+          {
+            "id": "ret-7",
+            "query": "What is the expected graduation period?",
+            "delta_recall": 1.0
+          },
+          {
+            "id": "ret-11",
+            "query": "How many projects are there in the resume?",
+            "delta_recall": 0.25
+          }
+        ],
+        "5": [],
+        "10": []
+      },
+      "hurt_precision_examples": {
+        "1": [
+          {
+            "id": "ret-3",
+            "query": "Is CI/CD enabled in the project metrics?",
+            "delta_precision": -1.0
+          },
+          {
+            "id": "ret-4",
+            "query": "Is the project Dockerized?",
+            "delta_precision": -1.0
+          }
+        ],
+        "3": [],
+        "5": [
+          {
+            "id": "ret-6",
+            "query": "What is the candidate's education?",
+            "delta_precision": -0.2
+          },
+          {
+            "id": "ret-10",
+            "query": "Does the resume mention vector databases?",
+            "delta_precision": -0.4
+          },
+          {
+            "id": "ret-12",
+            "query": "What is the third project name?",
+            "delta_precision": -0.2
+          }
+        ],
+        "10": [
+          {
+            "id": "ret-10",
+            "query": "Does the resume mention vector databases?",
+            "delta_precision": -0.2222
+          },
+          {
+            "id": "ret-12",
+            "query": "What is the third project name?",
+            "delta_precision": -0.2222
+          }
+        ]
       }
     }
-  ]
+  },
+  "selected_default_hybrid": "hybrid_weighted",
+  "diagnostic_summary": [
+    "ret-3:hybrid_weighted:first relevant moved down",
+    "ret-3:hybrid_rrf:first relevant moved down",
+    "ret-3:hybrid_rrf_reranked:first relevant moved down",
+    "ret-4:hybrid_weighted:first relevant moved down",
+    "ret-4:hybrid_rrf:first relevant moved down",
+    "ret-4:hybrid_rrf_reranked:first relevant moved down",
+    "ret-5:hybrid_rrf:first relevant moved up",
+    "ret-5:hybrid_rrf_reranked:first relevant moved up",
+    "ret-6:hybrid_rrf:first relevant moved down",
+    "ret-6:hybrid_rrf_reranked:first relevant moved down",
+    "ret-7:hybrid_weighted:first relevant moved up",
+    "ret-7:hybrid_rrf:first relevant moved up",
+    "ret-7:hybrid_rrf_reranked:first relevant moved up",
+    "ret-8:hybrid_rrf:first relevant moved down",
+    "ret-8:hybrid_rrf_reranked:first relevant moved down",
+    "ret-9:hybrid_weighted:first relevant moved up",
+    "ret-9:hybrid_rrf:first relevant moved up",
+    "ret-9:hybrid_rrf_reranked:first relevant moved up",
+    "ret-10:hybrid_rrf:first relevant moved up",
+    "ret-10:hybrid_rrf_reranked:first relevant moved down",
+    "ret-11:hybrid_rrf:first relevant moved up",
+    "ret-11:hybrid_rrf_reranked:first relevant moved up",
+    "ret-12:hybrid_rrf:first relevant moved down",
+    "ret-12:hybrid_rrf_reranked:first relevant moved down"
+  ],
+  "default_runtime_variant": "hybrid_weighted"
 }

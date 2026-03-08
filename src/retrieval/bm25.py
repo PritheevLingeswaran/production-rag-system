@@ -1,15 +1,85 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 from rank_bm25 import BM25Okapi
+from utils.settings import BM25Config
+
+_DEFAULT_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "how",
+    "in",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "this",
+    "to",
+    "was",
+    "what",
+    "when",
+    "where",
+    "which",
+    "who",
+    "with",
+}
 
 
-def _tokenize(text: str) -> list[str]:
-    return [t for t in "".join([c.lower() if c.isalnum() else " " for c in text]).split() if t]
+def _simple_stem(token: str) -> str:
+    for suffix in ("ingly", "edly", "ing", "edly", "edly", "ed", "es", "s"):
+        if token.endswith(suffix) and len(token) - len(suffix) >= 3:
+            return token[: -len(suffix)]
+    return token
+
+
+class BM25TextNormalizer:
+    def __init__(self, cfg: BM25Config | None = None) -> None:
+        self.cfg = cfg or BM25Config()
+        self._pattern = re.compile(r"[A-Za-z0-9]+")
+        self._spaced_word_pattern = re.compile(r"\b(?:[A-Za-z0-9]\s+){2,}[A-Za-z0-9]\b")
+
+    def normalize_text(self, text: str) -> str:
+        # PDF extraction can yield letter-spaced words like "F a s t A P I".
+        collapsed = self._spaced_word_pattern.sub(
+            lambda match: re.sub(r"\s+", "", match.group(0)),
+            text,
+        )
+        return collapsed.replace("–", "-")
+
+    def tokenize(self, text: str) -> list[str]:
+        text = self.normalize_text(text)
+        if self.cfg.strip_punctuation:
+            tokens = self._pattern.findall(text)
+        else:
+            tokens = text.split()
+        out: list[str] = []
+        for token in tokens:
+            t = token.lower() if self.cfg.lowercase else token
+            if len(t) < int(self.cfg.min_token_length):
+                continue
+            if self.cfg.remove_stopwords and t in _DEFAULT_STOPWORDS:
+                continue
+            if self.cfg.stemming:
+                t = _simple_stem(t)
+            if t:
+                out.append(t)
+        return out
 
 
 @dataclass(frozen=True)
@@ -54,21 +124,38 @@ class BM25PersistentIndex:
       For large scale, you'd replace this with a real inverted index (Elasticsearch/OpenSearch/Lucene).
     """
 
-    INDEX_VERSION = 1
+    INDEX_VERSION = 2
 
-    def __init__(self, *, chunk_ids: list[str], tokenized_docs: list[list[str]]) -> None:
+    def __init__(
+        self,
+        *,
+        chunk_ids: list[str],
+        tokenized_docs: list[list[str]],
+        tokenizer_config: BM25Config | None = None,
+    ) -> None:
         if len(chunk_ids) != len(tokenized_docs):
             raise ValueError("chunk_ids and tokenized_docs must have the same length")
         self.chunk_ids = chunk_ids
         self.tokenized_docs = tokenized_docs
+        self.tokenizer_config = tokenizer_config or BM25Config()
+        self._normalizer = BM25TextNormalizer(self.tokenizer_config)
         self._bm25 = BM25Okapi(self.tokenized_docs)
 
     @classmethod
-    def build(cls, texts_by_chunk_id: dict[str, str]) -> BM25PersistentIndex:
+    def build(
+        cls,
+        texts_by_chunk_id: dict[str, str],
+        tokenizer_config: BM25Config | None = None,
+    ) -> BM25PersistentIndex:
         # Preserve deterministic order by sorting keys. This makes evaluation reproducible.
+        normalizer = BM25TextNormalizer(tokenizer_config)
         chunk_ids = sorted(texts_by_chunk_id.keys())
-        tokenized = [_tokenize(texts_by_chunk_id[cid]) for cid in chunk_ids]
-        return cls(chunk_ids=chunk_ids, tokenized_docs=tokenized)
+        tokenized = [normalizer.tokenize(texts_by_chunk_id[cid]) for cid in chunk_ids]
+        return cls(
+            chunk_ids=chunk_ids,
+            tokenized_docs=tokenized,
+            tokenizer_config=tokenizer_config,
+        )
 
     def save(self, index_dir: str) -> None:
         import pickle
@@ -78,11 +165,18 @@ class BM25PersistentIndex:
         meta = {
             "version": self.INDEX_VERSION,
             "num_docs": len(self.chunk_ids),
-            "tokenizer": "simple",
+            "tokenizer": "configurable",
+            "tokenizer_config": self.tokenizer_config.model_dump(),
         }
         (out / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
         with (out / "bm25.pkl").open("wb") as f:
-            pickle.dump({"chunk_ids": self.chunk_ids, "tokenized_docs": self.tokenized_docs}, f)
+            pickle.dump(
+                {
+                    "chunk_ids": self.chunk_ids,
+                    "tokenized_docs": self.tokenized_docs,
+                },
+                f,
+            )
 
     @classmethod
     def load(cls, index_dir: str) -> BM25PersistentIndex:
@@ -101,7 +195,11 @@ class BM25PersistentIndex:
             raise ValueError(f"Unsupported BM25 index version: {meta.get('version')}")
         with data_path.open("rb") as f:
             obj = pickle.load(f)
-        return cls(chunk_ids=list(obj["chunk_ids"]), tokenized_docs=list(obj["tokenized_docs"]))
+        return cls(
+            chunk_ids=list(obj["chunk_ids"]),
+            tokenized_docs=list(obj["tokenized_docs"]),
+            tokenizer_config=BM25Config.model_validate(meta.get("tokenizer_config", {})),
+        )
 
     def query(
         self,
@@ -115,7 +213,7 @@ class BM25PersistentIndex:
         We still score the full corpus (requirement), but we drop ineligible items from the ranked list.
         """
 
-        q_tokens = _tokenize(q)
+        q_tokens = self._normalizer.tokenize(q)
         scores = self._bm25.get_scores(q_tokens)
         ranked = sorted(enumerate(scores), key=lambda x: float(x[1]), reverse=True)
         hits: list[BM25DocHit] = []
