@@ -46,6 +46,8 @@ src/utils/logging.py
 src/utils/openai_client.py
 src/utils/settings.py
 src/utils/text.py
+tests/test_answerer_gating.py
 tests/test_api_query.py
 tests/test_bm25_persistence.py
 tests/test_chunking.py
+tests/test_eval_and_fusion.py

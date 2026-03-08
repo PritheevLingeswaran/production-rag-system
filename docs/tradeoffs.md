@@ -30,3 +30,18 @@ Known tradeoffs / what we did NOT do:
   For large corpora, filtering should happen during retrieval to avoid scoring irrelevant docs.
 
 Rationale: these depend on deployment constraints (scale, infra, compliance) and would make the repo non-runnable by default.
+
+## Measurement tradeoffs
+
+Resume-metric claim boundaries for the March 8, 2026 run:
+
+- The retrieval quality numbers come from a tiny corpus of `2` documents and `9` chunks. They are reproducible, but they are not evidence of large-corpus behavior.
+- The latency numbers are local retrieval-path timings, not networked production SLA numbers.
+- The hallucination report is an offline gold-set evaluation using the repository's fallback answer path because no hosted-model credentials were available in the shell.
+- The load test was executed against a real local HTTP server, but every tested concurrency level failed in this environment. As a result, no concurrency-capacity claim can be made from this run.
+- Cost and token metrics are `0` in this run because the active path used local embeddings and no hosted LLM generation.
+
+What this means for resume claims:
+
+- Safe to claim: reproducible evaluation pipeline, dataset size, measured retrieval latency, measured retrieval quality, and measured offline hallucination rate.
+- Not safe to claim from this run: production throughput, successful concurrent query capacity, hosted-model cost, hosted-model token usage, or recall improvements from hybrid retrieval.

@@ -32,81 +32,142 @@ Dynamic: license-file
 
 # rag-smart-qa
 
-Industry-ready, **strict-grounding** Retrieval-Augmented Generation (RAG) system for PDF/TXT Q&A.
+Config-driven FastAPI RAG system with strict grounding, hybrid retrieval (BM25 + dense), and reproducible evaluation.
 
-Core guarantees:
-- answers are generated **only from retrieved chunks**
-- **citations** are mandatory; missing/invalid citations → refusal
-- per-request **confidence** + token/cost accounting
-- evaluation harness for retrieval + answer quality + hallucination rate + calibration
+## Core guarantees
+- Answers must be grounded in retrieved evidence.
+- Citation validation is enforced.
+- If evidence quality is weak, system refuses: `Not available in the provided documents.`
+- Metrics are exposed via Prometheus and evaluation scripts.
 
-## Run locally
+## API endpoints
+- `GET /healthz`
+- `POST /query`
+- `GET /metrics`
+- `GET /stats` (docs/chunks/vectors + active index paths)
+- `POST /retrieve/bm25` (baseline sparse retrieval)
+- `POST /retrieve/hybrid` (hybrid retrieval only)
+- `POST /debug/retrieval` (stage-wise scores/counts; enable via config/env)
 
+## Setup
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
-make install
-
-cp .env.example .env
-# set OPENAI_API_KEY (or use local embeddings model)
+pip install -r requirements.txt
+pip install -e .
 ```
 
-Put docs in:
-- `data/raw/documents/`
-
-Ingest + index:
+## Build index and run API
 ```bash
-make ingest
-make index
+source .venv/bin/activate
+PYTHONPATH=src python -m scripts.ingest_data
+PYTHONPATH=src python -m scripts.build_index --config configs/dev.yaml
+PYTHONPATH=src python -m scripts.run_api
 ```
 
-Run API:
-```bash
-make run
-```
+Open Swagger: `http://127.0.0.1:8000/docs`
 
-Query:
+## Quick verification
 ```bash
-curl -s http://localhost:8000/query \
+curl -sS http://127.0.0.1:8000/healthz | python3 -m json.tool
+curl -sS -X POST "http://127.0.0.1:8000/query" \
   -H "Content-Type: application/json" \
-  -d '{"query":"What is the warranty period?", "top_k": 6}'
+  -d '{"query":"How many projects are there in the resume?","top_k":8,"rewrite_query":false}' \
+  | python3 -m json.tool
 ```
 
-## Vector stores
-Default: **Chroma** (easy local persistence + metadata).  
-Optional: **FAISS** (faster, but requires installing `faiss-cpu` and compatible CPU).
+## Debug retrieval path
+Enable one of:
+- Config: `api.enable_debug_retrieval_endpoint: true`
+- Env: `RAG_DEBUG_RETRIEVAL=1`
 
-To enable FAISS:
-- install `faiss-cpu`
-- set `vector_store.provider: faiss` in `configs/base.yaml`
-
-## Evaluation
-Put gold dataset at `evaluation/datasets/gold.jsonl` and run:
+Then:
 ```bash
-make eval
+curl -sS -X POST "http://127.0.0.1:8000/debug/retrieval" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"How many projects are there in the resume?","top_k":8,"rewrite_query":false}' \
+  | python3 -m json.tool
 ```
 
-The evaluation report (`docs/evaluation_results.md`) includes:
-- recall@k / precision@k (dense vs hybrid)
-- hallucination rate
-- p95 latency (retrieval, generation, end-to-end) for the local eval run
-- corpus size (chunks, unique sources)
+Returned debug includes stage counts/scores:
+- `dense_hits`, `bm25_hits`, `fusion_hits`, `rerank_hits`, `final_hits`
+- `threshold_applied`
+- `top_scores` per stage
 
-## Load test (HTTP)
-To measure p95 latency and throughput under concurrency:
+## Evaluation workflow
 
-1) Start the API (`make run`)
-2) In another terminal:
+### 1) Corpus stats
 ```bash
-make loadtest
+curl -sS http://127.0.0.1:8000/stats | python3 -m json.tool
 ```
-
 Outputs:
-- `docs/load_test_results.md`
-- `docs/load_test_results.json`
+- `docs_count`
+- `chunks_count`
+- `vector_count`
+- index paths in use
 
-See docs:
-- `docs/architecture.md`
-- `docs/decisions.md`
-- `docs/tradeoffs.md`
-- `docs/security.md`
+### 2) Retrieval quality (BM25 vs Hybrid)
+```bash
+PYTHONPATH=src python -m scripts.eval_retrieval \
+  --eval_jsonl evaluation/datasets/retrieval_eval.jsonl \
+  --hybrid_url http://127.0.0.1:8000/retrieve/hybrid \
+  --bm25_url http://127.0.0.1:8000/retrieve/bm25 \
+  --method POST \
+  --payload '{"top_k":5,"rewrite_query":false}' \
+  --k 5 --concurrency 10
+```
+Outputs:
+- `hybrid_precision_at_k`, `hybrid_recall_at_k`
+- `bm25_precision_at_k`, `bm25_recall_at_k`
+- improvement % vs baseline
+
+### 3) Grounding evaluation (100 queries)
+```bash
+PYTHONPATH=src python -m scripts.grounding_eval export \
+  --query_url http://127.0.0.1:8000/query \
+  --method POST \
+  --payload '{"top_k":12,"rewrite_query":false}' \
+  --grounding_queries grounding_queries_100.txt \
+  --out_csv grounding_eval_100.csv \
+  --concurrency 3 \
+  --timeout 60
+
+# Optional bootstrap labeling
+PYTHONPATH=src python -m scripts.grounding_eval autolabel --out_csv grounding_eval_100.csv
+
+PYTHONPATH=src python -m scripts.grounding_eval score --out_csv grounding_eval_100.csv
+```
+Score output includes:
+- `grounded_rate`
+- `hallucination_rate`
+- `refusal_rate`
+- `answered_grounded_rate`
+- `request_error_rows` (network/server errors counted separately)
+
+### 4) Stability test (60m)
+```bash
+PYTHONPATH=src python -m scripts.stability_test \
+  --query_url http://127.0.0.1:8000/query \
+  --method POST \
+  --payload '{"top_k":12,"rewrite_query":false}' \
+  --duration_minutes 60 \
+  --concurrency 20 \
+  --stability_query "How many projects are there in the resume?" \
+  --out_csv stability_60m.csv
+```
+Per-minute CSV includes: `rps`, `lat_p95_ms`, `error_rate_percent`.
+
+## Make targets
+```bash
+make stats
+make eval-retrieval
+make eval-grounding
+make stability-60m
+```
+
+## Notes on common confusion
+- `embedding_tokens = 0` is expected for local `sentence_transformers` backend because token accounting is not provided.
+- `num_hits = 0` is usually threshold/filtering or missing index/path mismatch; use `/debug/retrieval` and `/stats` to prove where it drops.
+
+## License
+MIT

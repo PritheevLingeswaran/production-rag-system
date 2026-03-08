@@ -1,0 +1,99 @@
+{
+  "measured": true,
+  "mode": "dense",
+  "query_count": 12,
+  "top_k": 10,
+  "summary": {
+    "n": 12,
+    "avg_latency_ms": 16.226,
+    "p50_latency_ms": 9.276,
+    "p95_latency_ms": 30.329,
+    "p99_latency_ms": 30.799
+  },
+  "per_query": [
+    {
+      "id": "ret-1",
+      "query": "How many source documents are indexed?",
+      "latency_ms": 7.919,
+      "num_hits": 9,
+      "query_used": "How many source documents are indexed?"
+    },
+    {
+      "id": "ret-2",
+      "query": "What is the vector DB size?",
+      "latency_ms": 6.892,
+      "num_hits": 9,
+      "query_used": "What is the vector DB size?"
+    },
+    {
+      "id": "ret-3",
+      "query": "Is CI/CD enabled in the project metrics?",
+      "latency_ms": 30.916,
+      "num_hits": 9,
+      "query_used": "Is CI/CD enabled in the project metrics?"
+    },
+    {
+      "id": "ret-4",
+      "query": "Is the project Dockerized?",
+      "latency_ms": 6.695,
+      "num_hits": 9,
+      "query_used": "Is the project Dockerized?"
+    },
+    {
+      "id": "ret-5",
+      "query": "What is the candidate's role mentioned in the resume?",
+      "latency_ms": 28.32,
+      "num_hits": 9,
+      "query_used": "What is the candidate's role mentioned in the resume?"
+    },
+    {
+      "id": "ret-6",
+      "query": "What is the candidate's education?",
+      "latency_ms": 24.131,
+      "num_hits": 9,
+      "query_used": "What is the candidate's education?"
+    },
+    {
+      "id": "ret-7",
+      "query": "What is the expected graduation period?",
+      "latency_ms": 7.682,
+      "num_hits": 9,
+      "query_used": "What is the expected graduation period?"
+    },
+    {
+      "id": "ret-8",
+      "query": "What certifications are listed?",
+      "latency_ms": 29.849,
+      "num_hits": 9,
+      "query_used": "What certifications are listed?"
+    },
+    {
+      "id": "ret-9",
+      "query": "Does the resume mention FastAPI?",
+      "latency_ms": 8.973,
+      "num_hits": 9,
+      "query_used": "Does the resume mention FastAPI?"
+    },
+    {
+      "id": "ret-10",
+      "query": "Does the resume mention vector databases?",
+      "latency_ms": 9.578,
+      "num_hits": 9,
+      "query_used": "Does the resume mention vector databases?"
+    },
+    {
+      "id": "ret-11",
+      "query": "How many projects are there in the resume?",
+      "latency_ms": 26.424,
+      "num_hits": 9,
+      "query_used": "How many projects are there in the resume?"
+    },
+    {
+      "id": "ret-12",
+      "query": "What is the third project name?",
+      "latency_ms": 7.337,
+      "num_hits": 9,
+      "query_used": "What is the third project name?"
+    }
+  ]
+}

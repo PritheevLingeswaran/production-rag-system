@@ -62,68 +62,55 @@ Returned debug includes stage counts/scores:
 - `threshold_applied`
 - `top_scores` per stage
 
-## Evaluation workflow
+## Reproducible resume metrics
 
-### 1) Corpus stats
+Generate all machine-readable artifacts under `experiments/metrics/`:
+
 ```bash
-curl -sS http://127.0.0.1:8000/stats | python3 -m json.tool
+source .venv/bin/activate
+PYTHONPATH=src python -m scripts.measure_resume_metrics
 ```
-Outputs:
-- `docs_count`
-- `chunks_count`
-- `vector_count`
-- index paths in use
 
-### 2) Retrieval quality (BM25 vs Hybrid)
-```bash
-PYTHONPATH=src python -m scripts.eval_retrieval \
-  --eval_jsonl evaluation/datasets/retrieval_eval.jsonl \
-  --hybrid_url http://127.0.0.1:8000/retrieve/hybrid \
-  --bm25_url http://127.0.0.1:8000/retrieve/bm25 \
-  --method POST \
-  --payload '{"top_k":5,"rewrite_query":false}' \
-  --k 5 --concurrency 10
-```
-Outputs:
-- `hybrid_precision_at_k`, `hybrid_recall_at_k`
-- `bm25_precision_at_k`, `bm25_recall_at_k`
-- improvement % vs baseline
+This script produces:
+- `experiments/metrics/dataset_stats.json`
+- `experiments/metrics/latency_dense.json`
+- `experiments/metrics/latency_hybrid.json`
+- `experiments/metrics/retrieval_comparison.json`
+- `experiments/metrics/hallucination_report.json`
+- `experiments/metrics/load_test_report.json`
+- `experiments/metrics/resume_metrics.json`
+- `experiments/metrics/resume_bullets.md`
 
-### 3) Grounding evaluation (100 queries)
-```bash
-PYTHONPATH=src python -m scripts.grounding_eval export \
-  --query_url http://127.0.0.1:8000/query \
-  --method POST \
-  --payload '{"top_k":12,"rewrite_query":false}' \
-  --grounding_queries grounding_queries_100.txt \
-  --out_csv grounding_eval_100.csv \
-  --concurrency 3 \
-  --timeout 60
+What is measured:
+- Dataset size from `data/processed/chunks/chunks.jsonl` and the persisted index directories.
+- Dense-only vs hybrid retrieval latency on the fixed query set in `evaluation/datasets/resume_retrieval_eval.jsonl`.
+- Precision@1/3/5/10, Recall@1/3/5/10, MRR, and hit rate@k for dense-only vs hybrid retrieval.
+- Offline hallucination rate from the gold file `evaluation/datasets/resume_hallucination_eval.jsonl`.
+- Real HTTP load-test results against a local `uvicorn` process.
 
-# Optional bootstrap labeling
-PYTHONPATH=src python -m scripts.grounding_eval autolabel --out_csv grounding_eval_100.csv
+What is offline vs online:
+- Offline and reproducible without API keys: dataset stats, retrieval latency, retrieval quality, and the fallback-answer hallucination evaluation.
+- Online only when valid model credentials exist: end-to-end remote LLM generation and any non-zero token or cost accounting for hosted models.
 
-PYTHONPATH=src python -m scripts.grounding_eval score --out_csv grounding_eval_100.csv
-```
-Score output includes:
-- `grounded_rate`
-- `hallucination_rate`
-- `refusal_rate`
-- `answered_grounded_rate`
-- `request_error_rows` (network/server errors counted separately)
+Hallucination rule used by the script:
+- A response is counted as hallucinated if it answers a refusal-required question without refusing.
+- A response is also counted as hallucinated if it answers an answer-required question with missing/invalid citations or an answer that does not match the gold acceptable answers.
 
-### 4) Stability test (60m)
-```bash
-PYTHONPATH=src python -m scripts.stability_test \
-  --query_url http://127.0.0.1:8000/query \
-  --method POST \
-  --payload '{"top_k":12,"rewrite_query":false}' \
-  --duration_minutes 60 \
-  --concurrency 20 \
-  --stability_query "How many projects are there in the resume?" \
-  --out_csv stability_60m.csv
-```
-Per-minute CSV includes: `rps`, `lat_p95_ms`, `error_rate_percent`.
+Load-test claim boundary:
+- Do not claim concurrency capacity unless `experiments/metrics/load_test_report.json` shows a successful concurrency level.
+- Do not claim RPS unless it was explicitly measured and selected for reporting.
+
+## Current measured snapshot
+
+From the run on March 8, 2026:
+- Documents indexed: `2`
+- Chunks indexed: `9`
+- Vector index size on disk: `725156` bytes
+- Dense retrieval latency: avg `16.226 ms`, p95 `30.329 ms`
+- Hybrid retrieval latency: avg `7.194 ms`, p95 `8.058 ms`
+- Retrieval at `k=5`: dense precision `0.2`, hybrid precision `0.2`, dense recall `0.7708`, hybrid recall `0.7708`
+- Hallucination rate: dense baseline `0.2727`, strict grounded hybrid `0.0`
+- Load test: no successful concurrency level measured in this run; see `experiments/metrics/load_test_report.json`
 
 ## Make targets
 ```bash

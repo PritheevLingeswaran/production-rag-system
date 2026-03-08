@@ -299,7 +299,7 @@ class Answerer:
         self.system = load_prompt("prompts/system_instructions.txt")
         self.template = load_prompt("prompts/answer_with_citations.txt")
         self.refusal_policy = load_prompt("prompts/refusal_policy.txt")
-        self._disable_remote_generation = False
+        self._disable_remote_generation = not bool(oai.api_key)
 
     def generate(  # noqa: PLR0911, PLR0912
         self, question: str, hits: list[SearchHit]

@@ -1,0 +1,12 @@
+{"id":"ret-1","query":"How many source documents are indexed?","relevant_chunk_ids":["project_metrics.md:p1:c0"]}
+{"id":"ret-2","query":"What is the vector DB size?","relevant_chunk_ids":["project_metrics.md:p1:c0"]}
+{"id":"ret-3","query":"Is CI/CD enabled in the project metrics?","relevant_chunk_ids":["project_metrics.md:p1:c1"]}
+{"id":"ret-4","query":"Is the project Dockerized?","relevant_chunk_ids":["project_metrics.md:p1:c1"]}
+{"id":"ret-5","query":"What is the candidate's role mentioned in the resume?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c0"]}
+{"id":"ret-6","query":"What is the candidate's education?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c6"]}
+{"id":"ret-7","query":"What is the expected graduation period?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c6"]}
+{"id":"ret-8","query":"What certifications are listed?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c6"]}
+{"id":"ret-9","query":"Does the resume mention FastAPI?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c1","Pritheev_Resume.pdf:p1:c4"]}
+{"id":"ret-10","query":"Does the resume mention vector databases?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c0","Pritheev_Resume.pdf:p1:c1"]}
+{"id":"ret-11","query":"How many projects are there in the resume?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c2","Pritheev_Resume.pdf:p1:c3","Pritheev_Resume.pdf:p1:c4","Pritheev_Resume.pdf:p1:c5"]}
+{"id":"ret-12","query":"What is the third project name?","relevant_chunk_ids":["Pritheev_Resume.pdf:p1:c4","Pritheev_Resume.pdf:p1:c5"]}
