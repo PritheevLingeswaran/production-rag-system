@@ -8,7 +8,7 @@
   "p95_latency_ms_hybrid_weighted": 14.838,
   "avg_latency_ms_hybrid_rrf": 12.541,
   "p95_latency_ms_hybrid_rrf": 15.394,
-  "max_tested_concurrency_successful": 10,
+  "max_tested_concurrency_successful": 200,
   "mrr_dense": 0.4986,
   "precision_at_1_dense": 0.3333,
   "recall_at_1_dense": 0.3333,
