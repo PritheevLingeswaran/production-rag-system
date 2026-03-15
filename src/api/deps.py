@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import cast
 
 from fastapi import Depends, Header
 
@@ -133,4 +134,4 @@ def get_current_user_id(
     x_user_id: str | None = Header(default=None, alias="x-user-id"),
     auth_service: AuthService = Depends(get_auth_service),  # noqa: B008
 ) -> str:
-    return auth_service.resolve_user_id(x_user_id)
+    return cast(str, auth_service.resolve_user_id(x_user_id))

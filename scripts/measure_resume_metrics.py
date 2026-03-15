@@ -9,9 +9,9 @@ from typing import Any
 
 from evaluation.resume_metrics import (
     benchmark_retrieval_latency,
-    build_resume_bullets,
     build_cost_report,
     build_refusal_report,
+    build_resume_bullets,
     build_resume_metrics,
     default_run_environment,
     evaluate_hallucination,
@@ -25,9 +25,9 @@ from evaluation.resume_metrics import (
     make_hybrid_settings,
     make_strict_hybrid_answerer_settings,
     run_load_test,
-    summarize_retrieval_diagnostics,
     start_local_api,
     summarize_dataset_stats,
+    summarize_retrieval_diagnostics,
     validate_hallucination_examples,
     validate_retrieval_examples,
     write_json,
@@ -43,7 +43,7 @@ def _blocked(reason: str) -> dict[str, Any]:
     return {"measured": False, "reason": reason}
 
 
-def main() -> None:  # noqa: PLR0915
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Measure reproducible resume metrics for the current RAG repository."
     )
@@ -102,7 +102,9 @@ def main() -> None:  # noqa: PLR0915
 
     try:
         dense_settings = make_dense_settings(settings)
-        weighted_settings = make_hybrid_settings(settings, fusion_method="weighted", rerank_enabled=False)
+        weighted_settings = make_hybrid_settings(
+            settings, fusion_method="weighted", rerank_enabled=False
+        )
         rrf_settings = make_hybrid_settings(settings, fusion_method="rrf", rerank_enabled=False)
         rrf_rerank_settings = make_hybrid_settings(
             settings,

@@ -2,10 +2,28 @@ from __future__ import annotations
 
 from prometheus_client import Counter, Histogram
 
+HTTP_REQUEST_LATENCY = Histogram(
+    "rag_http_request_latency_seconds",
+    "Latency of HTTP requests by method and path",
+    ["method", "path", "status_code"],
+    buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10),
+)
 REQUEST_LATENCY = Histogram(
     "rag_request_latency_seconds",
     "Latency for /query requests",
     buckets=(0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10),
+)
+RETRIEVAL_LATENCY = Histogram(
+    "rag_retrieval_latency_seconds",
+    "Latency of the retrieval stage",
+    ["route"],
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2),
+)
+GENERATION_LATENCY = Histogram(
+    "rag_generation_latency_seconds",
+    "Latency of the answer generation stage",
+    ["route"],
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10),
 )
 REQUEST_COST_USD = Counter("rag_request_cost_usd_total", "Total USD cost across requests")
 REQUEST_TOKENS = Counter("rag_request_tokens_total", "Total tokens used across requests", ["kind"])

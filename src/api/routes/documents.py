@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 
 from api.deps import get_current_user_id, get_document_service, get_metadata_service
-from schemas.api_common import SourceCitation
+from schemas.api_common import ApiErrorResponse, SourceCitation
 from schemas.documents import (
     DashboardResponse,
     DocumentDetailResponse,
@@ -15,10 +15,15 @@ from schemas.documents import (
 from services.document_service import DocumentService
 from services.metadata_service import MetadataService
 
-router = APIRouter(prefix="/api", tags=["documents"])
+router = APIRouter(tags=["documents"])
 
 
-@router.post("/upload", response_model=UploadResponse)
+@router.post(
+    "/documents/upload",
+    response_model=UploadResponse,
+    responses={400: {"model": ApiErrorResponse}},
+)
+@router.post("/upload", response_model=UploadResponse, include_in_schema=False)
 def upload_documents(
     background_tasks: BackgroundTasks,
     files: list[UploadFile] = File(...),  # noqa: B008
@@ -47,7 +52,11 @@ def list_documents(
     return DocumentListResponse(documents=[DocumentItem.model_validate(doc) for doc in documents])
 
 
-@router.get("/documents/{document_id}", response_model=DocumentDetailResponse)
+@router.get(
+    "/documents/{document_id}",
+    response_model=DocumentDetailResponse,
+    responses={404: {"model": ApiErrorResponse}},
+)
 def get_document(
     document_id: str,
     owner_id: str = Depends(get_current_user_id),
@@ -58,7 +67,11 @@ def get_document(
     )
 
 
-@router.delete("/documents/{document_id}", response_model=DocumentItem)
+@router.delete(
+    "/documents/{document_id}",
+    response_model=DocumentItem,
+    responses={404: {"model": ApiErrorResponse}},
+)
 def delete_document(
     document_id: str,
     owner_id: str = Depends(get_current_user_id),
@@ -96,5 +109,8 @@ def get_citation(
 ) -> SourceCitation:
     citation = metadata.get_citation(citation_id, owner_id)
     if citation is None:
-        raise HTTPException(status_code=404, detail="Citation not found.")
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "citation_not_found", "message": "Citation not found."},
+        )
     return SourceCitation.model_validate(citation)

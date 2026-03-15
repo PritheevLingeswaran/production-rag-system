@@ -126,9 +126,7 @@ def _classify_answerability(
     )
 
 
-def _fallback_extract_answer(
-    question: str, hits: list[SearchHit]
-) -> tuple[str, bool, str]:
+def _fallback_extract_answer(question: str, hits: list[SearchHit]) -> tuple[str, bool, str]:
     """Return a deterministic local answer when LLM generation is unavailable."""
     q = question.lower()
     raw_context = "\n".join(h.chunk.text for h in hits)
@@ -351,9 +349,7 @@ class Answerer:
         self.refusal_policy = load_prompt("prompts/refusal_policy.txt")
         self._disable_remote_generation = not bool(oai.api_key)
 
-    def generate(
-        self, question: str, hits: list[SearchHit]
-    ) -> GenerationOutput:
+    def generate(self, question: str, hits: list[SearchHit]) -> GenerationOutput:
         if not hits:
             return GenerationOutput(
                 answer=(

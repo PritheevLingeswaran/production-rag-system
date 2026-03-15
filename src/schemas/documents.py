@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from schemas.api_common import ChunkPreview, PreviewPage
+from schemas.chat_api import ChatSession
 
 
 class UploadResponseItem(BaseModel):
@@ -74,4 +75,4 @@ class DashboardStats(BaseModel):
 class DashboardResponse(BaseModel):
     stats: DashboardStats
     recent_documents: list[DocumentItem]
-    recent_sessions: list[dict[str, object]]
+    recent_sessions: list[ChatSession]

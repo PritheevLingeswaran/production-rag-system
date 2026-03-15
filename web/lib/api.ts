@@ -54,28 +54,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  dashboard: () => request<DashboardPayload>("/api/dashboard"),
-  documents: () => request<{ documents: DocumentItem[] }>("/api/documents"),
-  document: (id: string) => request<DocumentDetail>(`/api/documents/${id}`),
-  documentSummary: (id: string) => request<SummaryPayload>(`/api/documents/${id}/summary`),
+  dashboard: () => request<DashboardPayload>("/api/v1/dashboard"),
+  documents: () => request<{ documents: DocumentItem[] }>("/api/v1/documents"),
+  document: (id: string) => request<DocumentDetail>(`/api/v1/documents/${id}`),
+  documentSummary: (id: string) => request<SummaryPayload>(`/api/v1/documents/${id}/summary`),
   deleteDocument: (id: string) =>
-    request<DocumentItem>(`/api/documents/${id}`, { method: "DELETE" }),
+    request<DocumentItem>(`/api/v1/documents/${id}`, { method: "DELETE" }),
   reindexDocument: (id: string) =>
-    request<{ document: DocumentDetail }>(`/api/documents/${id}/reindex`, { method: "POST" }),
-  chatSessions: () => request<{ sessions: ChatSession[] }>("/api/chat/sessions"),
-  chatSession: (id: string) => request<ChatSessionDetail>(`/api/chat/sessions/${id}`),
+    request<{ document: DocumentDetail }>(`/api/v1/documents/${id}/reindex`, { method: "POST" }),
+  chatSessions: () => request<{ sessions: ChatSession[] }>("/api/v1/chat/sessions"),
+  chatSession: (id: string) => request<ChatSessionDetail>(`/api/v1/chat/sessions/${id}`),
   deleteChatSession: (id: string) =>
-    request<{ deleted: boolean }>(`/api/chat/sessions/${id}`, { method: "DELETE" }),
+    request<{ deleted: boolean }>(`/api/v1/chat/sessions/${id}`, { method: "DELETE" }),
   chatQuery: (body: {
     question: string;
     session_id?: string;
     retrieval_mode: string;
     top_k: number;
   }) =>
-    request<ChatQueryResponse>("/api/chat/query", {
+    request<ChatQueryResponse>("/api/v1/chat/query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     }),
-  settings: () => request<SettingsPayload>("/api/settings")
+  settings: () => request<SettingsPayload>("/api/v1/settings")
 };

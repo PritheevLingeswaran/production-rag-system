@@ -1,187 +1,223 @@
 # rag-smart-qa
 
-Config-driven FastAPI RAG system with strict grounding, hybrid retrieval (BM25 + dense), reproducible evaluation, and a full Next.js knowledge workspace for uploads, chat, citations, summaries, and document management.
+Production-style full-stack RAG system with strict grounding, hybrid retrieval, typed FastAPI contracts, measurable evaluation, Docker deployment, CI coverage, and a Next.js reviewer-facing workspace.
 
-## Core guarantees
-- Answers must be grounded in retrieved evidence.
-- Citation validation is enforced.
-- If evidence quality is weak, system refuses: `Not available in the provided documents.`
-- Metrics are exposed via Prometheus and evaluation scripts.
+## Why this repo is stronger now
 
-## Application architecture
-- `src/api/routes/`: modular FastAPI routers for uploads, documents, chat, summaries, health, settings, and legacy query endpoints.
-- `src/services/`: document lifecycle, SQLite metadata persistence, summary generation, storage abstraction, and chat session orchestration.
-- `web/`: Next.js 14 App Router frontend with Tailwind, React Query, dashboard, chat, knowledge base, summaries, and settings pages.
-- `data/raw/documents/uploads/`: local-first file storage abstraction ready to be swapped for object storage later.
-- `data/processed/metadata/app.db`: SQLite metadata for documents, chat sessions/messages, citations, and cached summaries.
+- Tested backend retrieval, fusion, reranking, refusal/grounding, config loading, API routes, and an end-to-end upload -> index -> query flow.
+- Versioned API surface under `/api/v1` with structured error responses and OpenAPI-friendly typed schemas.
+- Container-ready backend and frontend with health checks, non-root runtime users, and Docker Compose wiring.
+- CI runs backend lint/type/test, frontend test/build, and Docker image builds from a clean checkout.
+- Structured logging, request IDs, correlation IDs, and Prometheus metrics for HTTP, retrieval, generation, errors, refusals, and token/cost usage.
+- Reproducible evaluation and load-test artifacts saved under `experiments/metrics/`.
 
-## API endpoints
-- `GET /healthz`
-- `GET /health`
-- `POST /query`
-- `GET /metrics`
-- `GET /stats` (docs/chunks/vectors + active index paths)
-- `POST /retrieve/bm25` (baseline sparse retrieval)
-- `POST /retrieve/hybrid` (hybrid retrieval only)
-- `POST /debug/retrieval` (stage-wise scores/counts; enable via config/env)
-- `POST /api/upload`
-- `GET /api/documents`
-- `GET /api/documents/{id}`
-- `DELETE /api/documents/{id}`
-- `POST /api/documents/{id}/reindex`
-- `GET /api/documents/{id}/summary`
-- `POST /api/chat/query`
-- `GET /api/chat/sessions`
-- `GET /api/chat/sessions/{id}`
-- `DELETE /api/chat/sessions/{id}`
-- `GET /api/citations/{citation_id}`
-- `GET /api/settings`
-- `GET /readiness`
+## Architecture
 
-## Setup
+```mermaid
+flowchart LR
+  U[Reviewer / User] --> W[Next.js Web]
+  W --> A[FastAPI API]
+  A --> M[(SQLite metadata)]
+  A --> S[(Local uploads)]
+  A --> R[Retriever]
+  R --> B[BM25 index]
+  R --> V[Vector store]
+  A --> G[Answerer]
+  A --> P[Prometheus metrics]
+  I[Ingestion / Index build] --> S
+  I --> B
+  I --> V
+  E[Evaluation scripts] --> A
+  E --> X[experiments/metrics]
+```
+
+More detail: [docs/architecture.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/architecture.md)
+
+## Feature summary
+
+- Multi-file upload, indexing, summaries, document browsing, citations, and session-aware chat UI.
+- Dense, BM25, weighted hybrid, RRF hybrid, and optional rerank retrieval modes.
+- Strict refusal policy when evidence is weak or citations are invalid.
+- Health, readiness, metrics, stats, and versioned query endpoints.
+- Local-first storage and metadata persistence with deployable seams for cloud infrastructure later.
+
+## API summary
+
+- Legacy operational endpoints remain available at `/query`, `/metrics`, `/stats`, `/healthz`, and `/readiness`.
+- Versioned application endpoints live under `/api/v1/...`.
+- Major routes:
+  - `POST /api/v1/query`
+  - `POST /api/v1/documents/upload`
+  - `GET /api/v1/documents`
+  - `GET /api/v1/documents/{id}`
+  - `POST /api/v1/chat/query`
+  - `GET /api/v1/chat/sessions`
+  - `GET /api/v1/citations/{citation_id}`
+  - `GET /api/v1/settings`
+
+Contract examples: [docs/api_contract.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/api_contract.md)
+
+## Testing and coverage
+
+- Backend tests: `pytest -q`
+- Frontend tests with coverage: `cd web && npm run test:coverage`
+- Backend coverage is emitted to `coverage.xml`.
+- Frontend coverage is emitted under `web/coverage/`.
+
+### Reproduce CI locally
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -U pip
 pip install -r requirements.txt
 pip install -e .
+ruff check src tests evaluation/resume_metrics.py
+mypy src tests evaluation/resume_metrics.py
+RAG_SKIP_STARTUP_VALIDATION=1 OPENAI_API_KEY=test OPENAI_BASE_URL=http://localhost:9999/v1 OPENAI_ORG='' pytest --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=60 -q
+cd web && npm ci && npm run test:coverage && NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run build
 ```
 
-## Build index and run API
+What is covered in-repo now:
+
+- Retrieval fusion and score-threshold behavior.
+- Lexical reranking.
+- Grounding/refusal and citation enforcement.
+- Config merge + environment interpolation.
+- FastAPI route behavior and structured validation errors.
+- Integration flow using a real upload -> index -> chat query path.
+- Frontend chat submission, upload behavior, and citation inspection.
+
+## Local development
+
+### Python + web setup
+
 ```bash
+python3 -m venv .venv
 source .venv/bin/activate
-PYTHONPATH=src python -m scripts.ingest_data
-PYTHONPATH=src python -m scripts.build_index --config configs/dev.yaml
-PYTHONPATH=src python -m scripts.run_api
+make install
 ```
 
-Open Swagger: `http://127.0.0.1:8000/docs`
+### Run the stack without Docker
 
-## Run the full web app
 ```bash
 cp .env.example .env
 cp web/.env.example web/.env.local
 
+make ingest
+make index
 make api
-# in another terminal
+# another terminal
 make web
 ```
 
-Frontend: `http://127.0.0.1:3000`
+- API docs: `http://127.0.0.1:8000/docs`
+- Web app: `http://127.0.0.1:3000`
 
-## Docker compose
+## Docker and deployment
+
+### Local Docker Compose
+
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
 
-This starts:
-- FastAPI API on `http://127.0.0.1:8000`
-- Next.js web app on `http://127.0.0.1:3000`
+- API: `http://127.0.0.1:8000`
+- Web: `http://127.0.0.1:3000`
+- Compose waits on the API readiness probe before starting the web container.
 
-## Upload, indexing, and citations flow
-1. Files are uploaded through `POST /api/upload` and stored locally under `data/raw/documents/uploads/<user>/`.
-2. Document metadata is persisted to SQLite immediately with `queued` indexing state.
-3. A background rebuild regenerates chunks, BM25, vector embeddings, and per-document summary cache.
-4. Chat responses persist the session, assistant message, and citation records.
-5. Clicking a citation in the web app opens the cited excerpt and links back to the document detail page.
+### Cloud target
 
-## Auth and storage notes
-- Auth is feature-flagged in backend settings and intentionally abstracted behind `AuthService`.
-- In single-user mode the app uses `local-user`; when auth is enabled, pass the configured user header until a Clerk/Firebase adapter is wired.
-- File storage is local-first through `StorageService`; the API surface is ready for a future S3/GCS implementation.
+The repo now documents a concrete Render deployment path for the API and web app:
+[docs/deployment.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/deployment.md)
 
-## Known limitations
-- PDF source highlighting is excerpt-based today; the document viewer focuses on cited chunk text and page number instead of byte-perfect PDF offsets.
-- Upload indexing currently rebuilds the canonical corpus to keep BM25 and FAISS/Chroma consistent across providers.
-- Frontend build/test commands require Node.js and npm to be installed locally.
+## Monitoring
 
-## Quick verification
-```bash
-curl -sS http://127.0.0.1:8000/healthz | python3 -m json.tool
-curl -sS -X POST "http://127.0.0.1:8000/query" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"How many projects are there in the resume?","top_k":8,"rewrite_query":false}' \
-  | python3 -m json.tool
-```
+- Structured JSON logs via `structlog`.
+- `x-request-id` and `x-correlation-id` added to responses and log context.
+- Prometheus metrics at `/metrics` and `/api/v1/metrics`.
+- Metrics include:
+  - request count
+  - HTTP latency
+  - retrieval latency
+  - generation latency
+  - retrieval score diagnostics
+  - request errors
+  - refusals
+  - token usage
+  - cost usage when available
 
-## Debug retrieval path
-Enable one of:
-- Config: `api.enable_debug_retrieval_endpoint: true`
-- Env: `RAG_DEBUG_RETRIEVAL=1`
+Monitoring and security notes: [docs/security.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/security.md)
 
-Then:
-```bash
-curl -sS -X POST "http://127.0.0.1:8000/debug/retrieval" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"How many projects are there in the resume?","top_k":8,"rewrite_query":false}' \
-  | python3 -m json.tool
-```
-
-Returned debug includes stage counts/scores:
-- `dense_hits`, `bm25_hits`, `fusion_hits`, `rerank_hits`, `final_hits`
-- `threshold_applied`
-- `top_scores` per stage
-
-## Reproducible resume metrics
-
-Generate all machine-readable artifacts under `experiments/metrics/`:
+## Reproduce results
 
 ```bash
-source .venv/bin/activate
-PYTHONPATH=src python -m scripts.measure_resume_metrics
+make ingest
+make index
+make eval
+make load-test
 ```
 
-This script produces:
-- `experiments/metrics/dataset_stats.json`
-- `experiments/metrics/latency_dense.json`
-- `experiments/metrics/latency_hybrid.json`
-- `experiments/metrics/retrieval_comparison.json`
-- `experiments/metrics/hallucination_report.json`
-- `experiments/metrics/load_test_report.json`
-- `experiments/metrics/resume_metrics.json`
-- `experiments/metrics/resume_bullets.md`
+Artifacts are written to `experiments/metrics/`, including:
 
-What is measured:
-- Dataset size from `data/processed/chunks/chunks.jsonl` and the persisted index directories.
-- Dense-only vs hybrid retrieval latency on the fixed query set in `evaluation/datasets/resume_retrieval_eval.jsonl`.
-- Precision@1/3/5/10, Recall@1/3/5/10, MRR, and hit rate@k for dense-only vs hybrid retrieval.
-- Offline hallucination rate from the gold file `evaluation/datasets/resume_hallucination_eval.jsonl`.
-- Real HTTP load-test results against a local `uvicorn` process.
+- `dataset_stats.json`
+- `retrieval_comparison.json`
+- `hallucination_report.json`
+- `refusal_report.json`
+- `cost_report.json`
+- `load_test_report.json`
+- `resume_metrics.json`
 
-What is offline vs online:
-- Offline and reproducible without API keys: dataset stats, retrieval latency, retrieval quality, and the fallback-answer hallucination evaluation.
-- Online only when valid model credentials exist: end-to-end remote LLM generation and any non-zero token or cost accounting for hosted models.
+Sample data notes: [data/README.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/data/README.md)
 
-Hallucination rule used by the script:
-- A response is counted as hallucinated if it answers a refusal-required question without refusing.
-- A response is also counted as hallucinated if it answers an answer-required question with missing/invalid citations or an answer that does not match the gold acceptable answers.
+## Evaluation snapshot
 
-Load-test claim boundary:
-- Do not claim concurrency capacity unless `experiments/metrics/load_test_report.json` shows a successful concurrency level.
-- Do not claim RPS unless it was explicitly measured and selected for reporting.
+The repository already includes measured artifacts under `experiments/metrics/`. Reviewers can inspect:
 
-## Current measured snapshot
+- [experiments/metrics/resume_metrics.json](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/experiments/metrics/resume_metrics.json)
+- [experiments/metrics/retrieval_comparison.json](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/experiments/metrics/retrieval_comparison.json)
+- [experiments/metrics/hallucination_report.json](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/experiments/metrics/hallucination_report.json)
 
-From the run on March 8, 2026:
-- Documents indexed: `2`
-- Chunks indexed: `9`
-- Vector index size on disk: `725156` bytes
-- Dense retrieval latency: avg `16.226 ms`, p95 `30.329 ms`
-- Hybrid retrieval latency: avg `7.194 ms`, p95 `8.058 ms`
-- Retrieval at `k=5`: dense precision `0.2`, hybrid precision `0.2`, dense recall `0.7708`, hybrid recall `0.7708`
-- Hallucination rate: dense baseline `0.2727`, strict grounded hybrid `0.0`
-- Load test: no successful concurrency level measured in this run; see `experiments/metrics/load_test_report.json`
+## CI status
 
-## Make targets
-```bash
-make stats
-make eval-retrieval
-make eval-grounding
-make stability-60m
+GitHub Actions workflow: [ci.yml](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/.github/workflows/ci.yml)
+
+It runs:
+
+- backend lint
+- backend typecheck
+- backend tests with coverage
+- frontend tests with coverage
+- frontend build
+- backend Docker build
+- frontend Docker build
+
+## Project structure
+
+```text
+src/api/               FastAPI app, middleware, route composition, structured errors
+src/services/          Upload, metadata, chat, summary, storage services
+src/retrieval/         BM25, dense retrieval, hybrid fusion, reranking
+src/generation/        Grounded answer generation and refusal logic
+web/                   Next.js reviewer-facing workspace
+tests/                 Backend unit, API, and integration tests
+docs/                  Architecture, API, tradeoffs, decisions, deployment, security
+experiments/metrics/   Saved evaluation and load-test artifacts
 ```
 
-## Notes on common confusion
-- `embedding_tokens = 0` is expected for local `sentence_transformers` backend because token accounting is not provided.
-- `num_hits = 0` is usually threshold/filtering or missing index/path mismatch; use `/debug/retrieval` and `/stats` to prove where it drops.
+## Engineering decisions and limits
+
+- Architecture: [docs/architecture.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/architecture.md)
+- Decisions: [docs/decisions.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/decisions.md)
+- Tradeoffs: [docs/tradeoffs.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/tradeoffs.md)
+
+## Current known weak spots
+
+- Docker runtime was prepared and validated at the file level, but this environment does not have the `docker` CLI installed, so Compose could not be executed here.
+- Coverage is materially improved, but some lower-level vector-store and OpenAI client branches are still less exercised than the core application paths.
+- The frontend coverage report is still concentrated around critical behaviors rather than full-page rendering breadth.
 
 ## License
+
 MIT

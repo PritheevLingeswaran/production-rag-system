@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import HTTPException, UploadFile
 
@@ -21,11 +21,11 @@ from utils.settings import Settings
 
 def _load_pages(path: Path) -> list[Page]:
     if path.suffix.lower() == ".pdf":
-        return load_pdf(path)
+        return cast(list[Page], load_pdf(path))
     if path.suffix.lower() in {".txt", ".md"}:
-        return load_txt(path)
+        return cast(list[Page], load_txt(path))
     if path.suffix.lower() in {".html", ".htm"}:
-        return load_html(path)
+        return cast(list[Page], load_html(path))
     raise ValueError(f"Unsupported file type: {path.suffix}")
 
 
@@ -102,7 +102,10 @@ class DocumentService:
         sort: str,
         order: str,
     ) -> list[dict[str, Any]]:
-        return self.metadata.list_documents(owner_id, search=search, sort=sort, order=order)
+        return cast(
+            list[dict[str, Any]],
+            self.metadata.list_documents(owner_id, search=search, sort=sort, order=order),
+        )
 
     def get_document_detail(self, document_id: str, owner_id: str) -> dict[str, Any]:
         document = self.metadata.get_document(document_id, owner_id)
@@ -124,7 +127,7 @@ class DocumentService:
             raise HTTPException(status_code=404, detail="Document not found.")
         self.storage.delete_file(document["stored_path"])
         self.rebuild_indexes(owner_id=owner_id)
-        return document
+        return cast(dict[str, Any], document)
 
     def reindex_document(self, document_id: str, owner_id: str) -> dict[str, Any]:
         document = self.metadata.get_document(document_id, owner_id)

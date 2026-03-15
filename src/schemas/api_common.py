@@ -5,9 +5,15 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-class ApiErrorResponse(BaseModel):
-    detail: str
+class ErrorDetail(BaseModel):
     code: str = "request_error"
+    message: str
+    request_id: str | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ApiErrorResponse(BaseModel):
+    error: ErrorDetail
 
 
 class PaginationMeta(BaseModel):

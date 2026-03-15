@@ -1,13 +1,16 @@
 SHELL := /bin/bash
 
 QUALITY_PATHS := src tests evaluation/resume_metrics.py
+WEB_PACKAGE_MANAGER := npm ci
+PYTHONPATH_EXPORT := PYTHONPATH=src
 
-.PHONY: install fmt lint typecheck test test-web run api web dev ingest index eval loadtest all docker-build docker-up docker-down stats eval-retrieval eval-grounding stability-60m
+.PHONY: install fmt lint typecheck test test-web test-all build run api web dev ingest index eval load-test loadtest all docker-build docker-up docker-down stats eval-retrieval eval-grounding stability-60m
 
 install:
 	python -m pip install -U pip
 	pip install -r requirements.txt
 	pip install -e .
+	cd web && $(WEB_PACKAGE_MANAGER)
 
 fmt:
 	ruff format .
@@ -19,57 +22,65 @@ typecheck:
 	mypy $(QUALITY_PATHS)
 
 test:
-	PYTHONPATH=src pytest -q
+	$(PYTHONPATH_EXPORT) pytest --cov=src --cov-report=term-missing --cov-report=xml -q
 
 test-web:
-	cd web && npm install && npm run test
+	cd web && $(WEB_PACKAGE_MANAGER) && npm run test -- --coverage
+
+test-all: test test-web
+
+build:
+	python -m build
+	cd web && $(WEB_PACKAGE_MANAGER) && npm run build
 
 run:
-	PYTHONPATH=src python -m scripts.run_api
+	$(PYTHONPATH_EXPORT) python -m scripts.run_api
 
 api:
-	PYTHONPATH=src python -m scripts.run_api
+	$(PYTHONPATH_EXPORT) python -m scripts.run_api
 
 web:
-	cd web && npm install && npm run dev
+	cd web && $(WEB_PACKAGE_MANAGER) && npm run dev
 
 dev:
 	docker compose up --build
 
 ingest:
-	PYTHONPATH=src python -m scripts.ingest_data
+	$(PYTHONPATH_EXPORT) python -m scripts.ingest_data
 
 index:
-	PYTHONPATH=src python -m scripts.build_index
+	$(PYTHONPATH_EXPORT) python -m scripts.build_index
 
 eval:
-	PYTHONPATH=src python -m scripts.run_eval
+	$(PYTHONPATH_EXPORT) python -m scripts.measure_resume_metrics
 
-loadtest:
-	PYTHONPATH=src python -m scripts.load_test
+load-test:
+	$(PYTHONPATH_EXPORT) python -m scripts.load_test
+
+loadtest: load-test
 
 stats:
 	curl -sS http://127.0.0.1:8000/stats | python3 -m json.tool
 
 eval-retrieval:
-	PYTHONPATH=src python -m scripts.eval_retrieval \
+	$(PYTHONPATH_EXPORT) python -m scripts.eval_retrieval \
 		--eval_jsonl evaluation/datasets/retrieval_eval.jsonl \
 		--hybrid_url http://127.0.0.1:8000/retrieve/hybrid \
 		--bm25_url http://127.0.0.1:8000/retrieve/bm25 \
 		--method POST --payload '{"top_k":5,"rewrite_query":false}' --k 5
 
 eval-grounding:
-	PYTHONPATH=src python -m scripts.grounding_eval export \
+	$(PYTHONPATH_EXPORT) python -m scripts.grounding_eval export \
 		--query_url http://127.0.0.1:8000/query \
 		--method POST \
 		--payload '{"top_k":12,"rewrite_query":false}' \
 		--grounding_queries grounding_queries_100.txt \
 		--out_csv grounding_eval_100.csv \
 		--concurrency 3 --timeout 60
-	PYTHONPATH=src python -m scripts.grounding_eval score --out_csv grounding_eval_100.csv
+	$(PYTHONPATH_EXPORT) python -m scripts.grounding_eval score --out_csv grounding_eval_100.csv
 
 stability-60m:
-	PYTHONPATH=src python -m scripts.stability_test \
+	$(PYTHONPATH_EXPORT) python -m scripts.stability_test \
 		--query_url http://127.0.0.1:8000/query \
 		--method POST \
 		--payload '{"top_k":12,"rewrite_query":false}' \
@@ -78,7 +89,7 @@ stability-60m:
 		--out_csv stability_60m.csv
 
 all:
-	PYTHONPATH=src python -m scripts.run_all
+	$(PYTHONPATH_EXPORT) python -m scripts.run_all
 
 docker-build:
 	docker build -t rag-smart-qa:latest .

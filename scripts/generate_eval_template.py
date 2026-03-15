@@ -6,7 +6,9 @@ from pathlib import Path
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate an annotation template from indexed chunks.")
+    parser = argparse.ArgumentParser(
+        description="Generate an annotation template from indexed chunks."
+    )
     parser.add_argument(
         "--chunks-path",
         default="data/processed/chunks/chunks.jsonl",

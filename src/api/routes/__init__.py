@@ -12,7 +12,19 @@ from api.routes.summaries import router as summaries_router
 router = APIRouter()
 router.include_router(health_router)
 router.include_router(legacy_router)
-router.include_router(documents_router)
-router.include_router(chat_router)
-router.include_router(summaries_router)
-router.include_router(settings_router)
+
+compat_router = APIRouter(prefix="/api")
+compat_router.include_router(documents_router)
+compat_router.include_router(chat_router)
+compat_router.include_router(summaries_router)
+compat_router.include_router(settings_router)
+
+v1_router = APIRouter(prefix="/api/v1")
+v1_router.include_router(legacy_router)
+v1_router.include_router(documents_router)
+v1_router.include_router(chat_router)
+v1_router.include_router(summaries_router)
+v1_router.include_router(settings_router)
+
+router.include_router(compat_router)
+router.include_router(v1_router)

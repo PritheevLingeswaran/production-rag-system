@@ -65,7 +65,9 @@ class SummaryService:
                     "status": "ready",
                     "title": payload.get("title") or document["filename"],
                     "summary": payload.get("summary", ""),
-                    "key_insights": payload.get("key_insights", [])[: self.settings.summaries.max_points],
+                    "key_insights": payload.get("key_insights", [])[
+                        : self.settings.summaries.max_points
+                    ],
                     "important_points": payload.get("important_points", [])[
                         : self.settings.summaries.max_points
                     ],
@@ -91,9 +93,7 @@ class SummaryService:
 
     def _fallback_summary(self, *, document: dict[str, Any], text: str) -> dict[str, Any]:
         sentences = [
-            sentence.strip()
-            for sentence in text.replace("\n", " ").split(".")
-            if sentence.strip()
+            sentence.strip() for sentence in text.replace("\n", " ").split(".") if sentence.strip()
         ]
         key_points = sentences[: self.settings.summaries.max_points]
         keywords = self._keywords_from_text(text)

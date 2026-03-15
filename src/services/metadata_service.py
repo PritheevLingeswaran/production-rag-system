@@ -4,7 +4,7 @@ import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -13,7 +13,7 @@ from utils.settings import Settings
 
 
 def utc_now() -> str:
-    return datetime.now(tz=UTC).isoformat()
+    return datetime.now(tz=timezone.utc).isoformat()
 
 
 class MetadataService:
@@ -207,7 +207,9 @@ class MetadataService:
             return None
         with self.connection() as conn:
             conn.execute("DELETE FROM summaries WHERE document_id = ?", (document_id,))
-            conn.execute("DELETE FROM documents WHERE id = ? AND owner_id = ?", (document_id, owner_id))
+            conn.execute(
+                "DELETE FROM documents WHERE id = ? AND owner_id = ?", (document_id, owner_id)
+            )
         return document
 
     def set_document_status(
@@ -239,7 +241,9 @@ class MetadataService:
                 (
                     indexing_status,
                     int(pages if pages is not None else document["pages"]),
-                    int(chunks_created if chunks_created is not None else document["chunks_created"]),
+                    int(
+                        chunks_created if chunks_created is not None else document["chunks_created"]
+                    ),
                     error_message,
                     summary_status if summary_status is not None else document["summary_status"],
                     json.dumps(metadata),
@@ -406,7 +410,9 @@ class MetadataService:
             "metadata": metadata or {},
         }
 
-    def add_citations(self, message_id: str, citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def add_citations(
+        self, message_id: str, citations: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         now = utc_now()
         rows: list[dict[str, Any]] = []
         with self.connection() as conn:

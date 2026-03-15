@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 from utils.settings import Settings
 
 
@@ -9,11 +11,11 @@ class AuthService:
 
     def resolve_user_id(self, header_value: str | None) -> str:
         if not self.settings.auth.enabled:
-            return self.settings.auth.demo_user_id
+            return cast(str, self.settings.auth.demo_user_id)
         if header_value:
             return header_value
-        return self.settings.auth.demo_user_id
+        return cast(str, self.settings.auth.demo_user_id)
 
 
 def user_id_header_alias(settings: Settings) -> str:
-    return settings.auth.header_user_id
+    return cast(str, settings.auth.header_user_id)

@@ -1,5 +1,6 @@
 import io
 import os
+from typing import Any
 
 from fastapi.testclient import TestClient
 
@@ -10,7 +11,13 @@ os.environ["RAG_SKIP_STARTUP_VALIDATION"] = "1"
 
 
 class FakeDocumentService:
-    def create_upload_records(self, *, files, owner_id, collection_name=None):
+    def create_upload_records(
+        self,
+        *,
+        files: list[Any],
+        owner_id: str,
+        collection_name: str | None = None,
+    ) -> list[dict[str, Any]]:
         return [
             {
                 "id": "doc-1",
@@ -24,10 +31,17 @@ class FakeDocumentService:
             }
         ]
 
-    def rebuild_indexes(self, *, owner_id):
+    def rebuild_indexes(self, *, owner_id: str) -> None:
         return None
 
-    def list_documents(self, owner_id, *, search, sort, order):
+    def list_documents(
+        self,
+        owner_id: str,
+        *,
+        search: str | None,
+        sort: str,
+        order: str,
+    ) -> list[dict[str, Any]]:
         return [
             {
                 "id": "doc-1",
@@ -46,7 +60,7 @@ class FakeDocumentService:
             }
         ]
 
-    def get_document_detail(self, document_id, owner_id):
+    def get_document_detail(self, document_id: str, owner_id: str) -> dict[str, Any]:
         return {
             "id": document_id,
             "filename": "guide.txt",
@@ -76,14 +90,14 @@ class FakeDocumentService:
             },
         }
 
-    def delete_document(self, document_id, owner_id):
+    def delete_document(self, document_id: str, owner_id: str) -> dict[str, Any]:
         doc = self.list_documents(owner_id, search=None, sort="upload_time", order="desc")[0]
         return doc
 
-    def reindex_document(self, document_id, owner_id):
+    def reindex_document(self, document_id: str, owner_id: str) -> dict[str, Any]:
         return self.get_document_detail(document_id, owner_id)
 
-    def get_dashboard(self, owner_id):
+    def get_dashboard(self, owner_id: str) -> dict[str, Any]:
         return {
             "stats": {
                 "total_documents": 1,
@@ -91,7 +105,9 @@ class FakeDocumentService:
                 "total_sessions": 1,
                 "indexing_status": {"ready": 1},
             },
-            "recent_documents": self.list_documents(owner_id, search=None, sort="upload_time", order="desc"),
+            "recent_documents": self.list_documents(
+                owner_id, search=None, sort="upload_time", order="desc"
+            ),
             "recent_sessions": [
                 {
                     "id": "session-1",
@@ -105,7 +121,15 @@ class FakeDocumentService:
 
 
 class FakeChatService:
-    def query(self, *, owner_id, question, session_id, retrieval_mode, top_k):
+    def query(
+        self,
+        *,
+        owner_id: str,
+        question: str,
+        session_id: str | None,
+        retrieval_mode: str,
+        top_k: int,
+    ) -> dict[str, Any]:
         return {
             "session_id": "session-1",
             "answer": "Grounded answer",
@@ -135,7 +159,7 @@ class FakeChatService:
             "timing": {"latency_ms": 12.5},
         }
 
-    def list_sessions(self, owner_id):
+    def list_sessions(self, owner_id: str) -> list[dict[str, Any]]:
         return [
             {
                 "id": "session-1",
@@ -146,7 +170,7 @@ class FakeChatService:
             }
         ]
 
-    def get_session(self, session_id, owner_id):
+    def get_session(self, session_id: str, owner_id: str) -> dict[str, Any]:
         return {
             "id": session_id,
             "owner_id": owner_id,
@@ -168,12 +192,12 @@ class FakeChatService:
             ],
         }
 
-    def delete_session(self, session_id, owner_id):
+    def delete_session(self, session_id: str, owner_id: str) -> bool:
         return True
 
 
 class FakeMetadataService:
-    def get_summary(self, document_id):
+    def get_summary(self, document_id: str) -> dict[str, Any]:
         return {
             "document_id": document_id,
             "status": "ready",
@@ -186,7 +210,7 @@ class FakeMetadataService:
             "generated_at": "2026-03-13T00:00:00Z",
         }
 
-    def get_citation(self, citation_id, owner_id):
+    def get_citation(self, citation_id: str, owner_id: str) -> dict[str, Any]:
         return {
             "id": citation_id,
             "document_id": "doc-1",
@@ -225,34 +249,35 @@ def test_upload_list_detail_summary_and_chat_routes() -> None:
     client = TestClient(app)
 
     upload = client.post(
-        "/api/upload",
+        "/api/v1/documents/upload",
         files=[("files", ("guide.txt", io.BytesIO(b"hello world"), "text/plain"))],
     )
     assert upload.status_code == 200
     assert upload.json()["documents"][0]["filename"] == "guide.txt"
 
-    documents = client.get("/api/documents")
+    documents = client.get("/api/v1/documents")
     assert documents.status_code == 200
     assert documents.json()["documents"][0]["id"] == "doc-1"
 
-    detail = client.get("/api/documents/doc-1")
+    detail = client.get("/api/v1/documents/doc-1")
     assert detail.status_code == 200
     assert detail.json()["summary"]["status"] == "ready"
 
-    summary = client.get("/api/documents/doc-1/summary")
+    summary = client.get("/api/v1/documents/doc-1/summary")
     assert summary.status_code == 200
     assert summary.json()["summary"] == "Summary text"
 
     chat = client.post(
-        "/api/chat/query",
+        "/api/v1/chat/query",
         json={"question": "What is this?", "retrieval_mode": "hybrid_rrf", "top_k": 5},
     )
     assert chat.status_code == 200
     assert chat.json()["citations"][0]["chunk_id"] == "chunk-1"
 
-    citation = client.get("/api/citations/cit-1")
+    citation = client.get("/api/v1/citations/cit-1")
     assert citation.status_code == 200
     assert citation.json()["excerpt"] == "cited text"
+    assert "retrieval_latency_ms" in chat.json()["timing"]
 
 
 def test_health_and_readiness_aliases() -> None:
@@ -262,3 +287,6 @@ def test_health_and_readiness_aliases() -> None:
 
     assert client.get("/health").status_code == 200
     assert client.get("/healthz").status_code == 200
+    readiness = client.get("/readiness")
+    assert readiness.status_code == 200
+    assert readiness.json()["checks"]["runtime"] == "ok"

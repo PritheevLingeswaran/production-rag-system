@@ -1,47 +1,79 @@
 # Tradeoffs
 
-Not implemented in this baseline:
-- multi-tenant auth + document ACL enforcement
-- distributed ingestion/index build
-- OpenTelemetry tracing + APM
-- learned reranking/fusion beyond basic CrossEncoder hook
+## Operational limits
 
-## Hybrid retrieval tradeoffs (BM25 + dense)
+- Local file storage is simple and reproducible, but it is not a multi-region document platform.
+- SQLite keeps the repo easy to run, but it is not the final answer for high-write multi-tenant production.
+- Chroma and FAISS are good local baselines, but large-scale search would likely move to a stronger managed or distributed retrieval tier.
 
-What we implemented:
-- **True sparse retrieval over the full corpus** using a persistent BM25 index (`rank-bm25`).
-- **Score fusion** with a tunable weight: `final = dense_weight*dense + (1-dense_weight)*bm25`.
-- Candidate sets are retrieved independently (dense_k + bm25_k) and fused by union.
+## Retrieval tradeoffs
 
-Why this approach:
-- It’s the simplest “industry-real” hybrid baseline that runs locally, is config-driven, and is easy to debug.
-- The union is where recall gains come from: BM25 can surface exact-term evidence that dense misses.
+### Dense only
 
-Known tradeoffs / what we did NOT do:
-- **BM25 runtime is O(N) per query** with `rank-bm25`. This is fine for local corpora, but not for 10^6+ chunks.
-  At scale, replace BM25 with Lucene/Elasticsearch/OpenSearch (true inverted index) or a hosted sparse retriever.
-- **Score normalization** uses max-score scaling for BM25 (cheap, monotonic). For certain distributions, more robust
-  normalization (e.g., rank-based fusion like RRF) can be more stable.
-- **Fusion method** is linear weighted sum. In production, you often use:
-  - Reciprocal Rank Fusion (RRF)
-  - Learned-to-rank fusion / reranking
-  - Domain-specific heuristics (e.g., boost titles, headers, recency)
-- **Metadata filtering** is applied *after* scoring for BM25 (we still score the full corpus to meet requirements).
-  For large corpora, filtering should happen during retrieval to avoid scoring irrelevant docs.
+Upside:
+- Fast and simple.
 
-Rationale: these depend on deployment constraints (scale, infra, compliance) and would make the repo non-runnable by default.
+Downside:
+- Can miss exact-token evidence that matters for grounded answering.
 
-## Measurement tradeoffs
+### Hybrid retrieval
 
-Resume-metric claim boundaries for the March 8, 2026 run:
+Upside:
+- Better evidence coverage across semantic and lexical mismatch.
 
-- The retrieval quality numbers come from a tiny corpus of `2` documents and `9` chunks. They are reproducible, but they are not evidence of large-corpus behavior.
-- The latency numbers are local retrieval-path timings, not networked production SLA numbers.
-- The hallucination report is an offline gold-set evaluation using the repository's fallback answer path because no hosted-model credentials were available in the shell.
-- The load test was executed against a real local HTTP server, but every tested concurrency level failed in this environment. As a result, no concurrency-capacity claim can be made from this run.
-- Cost and token metrics are `0` in this run because the active path used local embeddings and no hosted LLM generation.
+Downside:
+- More moving parts.
+- More tuning surface.
+- Slightly higher operational complexity for debugging.
 
-What this means for resume claims:
+### RRF
 
-- Safe to claim: reproducible evaluation pipeline, dataset size, measured retrieval latency, measured retrieval quality, and measured offline hallucination rate.
-- Not safe to claim from this run: production throughput, successful concurrent query capacity, hosted-model cost, hosted-model token usage, or recall improvements from hybrid retrieval.
+Upside:
+- Robust when score scales are not directly comparable.
+
+Downside:
+- Rank fusion loses some score magnitude information.
+
+### Reranking
+
+Upside:
+- Can improve final evidence precision when candidate lists are ambiguous.
+
+Downside:
+- Adds latency and, depending on provider, heavier dependencies.
+
+## Strict refusal tradeoffs
+
+Upside:
+- Safer than confidently answering from weak evidence.
+- Reviewer-visible hallucination discipline.
+
+Downside:
+- Some borderline answerable questions will refuse.
+- Product UX can feel conservative unless the UI explains refusal well.
+
+## Monitoring tradeoffs
+
+Upside:
+- Request IDs, logs, and Prometheus metrics make operational behavior observable.
+
+Downside:
+- This repo stops at metrics and structured logging. It does not yet provide full distributed tracing or APM.
+
+## CI and reproducibility tradeoffs
+
+Upside:
+- Stable CI without external secrets.
+- Offline paths make review easier.
+
+Downside:
+- Secret-free CI means hosted LLM behavior is not exercised in every run.
+- Some hosted-model token and cost fields are only populated when credentials are present.
+
+## What this repo still does not claim
+
+- Large-corpus benchmark leadership
+- Multi-tenant security hardening
+- Elastic horizontal ingest workers
+- Full cloud-native autoscaling behavior
+- Production throughput guarantees without environment-specific measurement

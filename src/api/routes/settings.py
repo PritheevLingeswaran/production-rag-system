@@ -6,7 +6,7 @@ from api.deps import get_settings
 from schemas.settings_api import AppSettingsResponse
 from utils.settings import Settings
 
-router = APIRouter(prefix="/api", tags=["settings"])
+router = APIRouter(tags=["settings"])
 
 
 @router.get("/settings", response_model=AppSettingsResponse)

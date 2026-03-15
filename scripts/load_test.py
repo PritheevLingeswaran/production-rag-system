@@ -118,8 +118,12 @@ async def load_test_async() -> None:
         "sample_errors": [e.error for e in errs[:5]],
     }
 
-    Path("docs").mkdir(parents=True, exist_ok=True)
-    Path("docs/load_test_results.json").write_text(json.dumps(out_json, indent=2), encoding="utf-8")
+    output_dir = Path("experiments/metrics")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    Path(output_dir / "load_test_report.json").write_text(
+        json.dumps(out_json, indent=2),
+        encoding="utf-8",
+    )
     md = (
         "# Load Test Results\n\n"
         f"Target: `{url}`\n\n"
@@ -138,7 +142,7 @@ async def load_test_async() -> None:
         f"- error count: {len(errs)}\n"
         f"- sample errors: {out_json['sample_errors']}\n"
     )
-    Path("docs/load_test_results.md").write_text(md, encoding="utf-8")
+    Path(output_dir / "load_test_report.md").write_text(md, encoding="utf-8")
 
     print(md)
 

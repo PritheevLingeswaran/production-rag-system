@@ -11,15 +11,12 @@ from fastapi.responses import PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from api.deps import get_answerer, get_retriever
-from monitoring.metrics import (
-    REQUEST_COST_USD,
-    REQUEST_ERRORS,
-    REQUEST_GROUNDED,
-    REQUEST_LATENCY,
-    REQUEST_REFUSALS,
-    REQUEST_TOKENS,
-    RETRIEVAL_TOP_GAP,
-    RETRIEVAL_TOP_SCORE,
+from monitoring.query_metrics import (
+    record_error,
+    record_grounded,
+    record_refusal,
+    record_retrieval_scores,
+    record_usage_metrics,
 )
 from schemas.query import QueryRequest
 from schemas.response import QueryResponse, Refusal, SourceChunk
@@ -27,44 +24,6 @@ from utils.logging import get_logger
 
 log = get_logger(__name__)
 router = APIRouter(tags=["legacy"])
-
-
-def _record_usage_metrics(
-    *,
-    latency_s: float,
-    embedding_tokens: int,
-    llm_in: int | None,
-    llm_out: int | None,
-    total_cost: float | None,
-) -> None:
-    REQUEST_LATENCY.observe(latency_s)
-    if total_cost is not None:
-        REQUEST_COST_USD.inc(total_cost)
-    REQUEST_TOKENS.labels(kind="embedding").inc(float(embedding_tokens))
-    if llm_in is not None:
-        REQUEST_TOKENS.labels(kind="llm_in").inc(float(llm_in))
-    if llm_out is not None:
-        REQUEST_TOKENS.labels(kind="llm_out").inc(float(llm_out))
-
-
-def _record_refusal(reason: str) -> None:
-    REQUEST_REFUSALS.labels(reason=reason.strip().lower() if reason else "unspecified").inc()
-
-
-def _record_grounded(answer: str, sources: list[SourceChunk], is_refusal: bool) -> None:
-    if is_refusal:
-        return
-    REQUEST_GROUNDED.labels(
-        grounded="true" if any(f"[{source.chunk_id}]" in answer for source in sources) else "false"
-    ).inc()
-
-
-def _record_retrieval_scores(sources: list[SourceChunk]) -> None:
-    if not sources:
-        return
-    RETRIEVAL_TOP_SCORE.observe(float(sources[0].score))
-    if len(sources) > 1:
-        RETRIEVAL_TOP_GAP.observe(max(0.0, float(sources[0].score) - float(sources[1].score)))
 
 
 def _to_source_chunks(hits: list[Any]) -> list[SourceChunk]:
@@ -108,6 +67,7 @@ def query(
 
     retriever_impl = cast(Any, retriever)
     answerer_impl = cast(Any, answerer)
+    retrieval_started = time.perf_counter()
     try:
         retrieval = retriever_impl.retrieve(
             question=req.query,
@@ -117,16 +77,19 @@ def query(
         )
     except Exception as exc:
         log.exception("query.retrieve_failed", error=str(exc))
-        REQUEST_ERRORS.labels(stage="retrieval").inc()
+        record_error("retrieval")
         latency_s = time.perf_counter() - start
-        _record_usage_metrics(
+        record_usage_metrics(
             latency_s=latency_s,
+            retrieval_latency_s=time.perf_counter() - retrieval_started,
+            generation_latency_s=None,
             embedding_tokens=0,
             llm_in=None,
             llm_out=None,
             total_cost=None,
+            route="/query",
         )
-        _record_refusal("retrieval backend error")
+        record_refusal("retrieval backend error")
         return QueryResponse(
             answer="I cannot answer right now because retrieval is temporarily unavailable.",
             confidence=0.0,
@@ -138,21 +101,27 @@ def query(
             metrics={"error": "retrieval_failed", "latency_ms": round(latency_s * 1000.0, 2)},
         )
 
+    retrieval_latency_s = time.perf_counter() - retrieval_started
+    generation_started = time.perf_counter()
     try:
         generation = answerer_impl.generate(req.query, retrieval.hits)
     except Exception as exc:
         log.exception("query.generate_failed", error=str(exc))
-        REQUEST_ERRORS.labels(stage="generation").inc()
+        record_error("generation")
         latency_s = time.perf_counter() - start
-        total_cost = float(retrieval.embedding_cost_usd)
-        _record_usage_metrics(
+        failed_total_cost = float(retrieval.embedding_cost_usd)
+        generation_latency_s = time.perf_counter() - generation_started
+        record_usage_metrics(
             latency_s=latency_s,
+            retrieval_latency_s=retrieval_latency_s,
+            generation_latency_s=generation_latency_s,
             embedding_tokens=int(retrieval.embedding_tokens),
             llm_in=None,
             llm_out=None,
-            total_cost=total_cost,
+            total_cost=failed_total_cost,
+            route="/query",
         )
-        _record_refusal("generation backend error")
+        record_refusal("generation backend error")
         return QueryResponse(
             answer="I found relevant sources, but answer generation is temporarily unavailable.",
             confidence=0.0,
@@ -168,7 +137,7 @@ def query(
                 "llm_tokens_in": None,
                 "llm_tokens_out": None,
                 "llm_cost_usd": None,
-                "total_cost_usd": total_cost,
+                "total_cost_usd": failed_total_cost,
                 "num_hits": len(retrieval.hits),
                 "error": "generation_failed",
                 "latency_ms": round(latency_s * 1000.0, 2),
@@ -176,22 +145,26 @@ def query(
         )
 
     latency_s = time.perf_counter() - start
-    total_cost = (
+    generation_latency_s = time.perf_counter() - generation_started
+    total_cost: float | None = (
         float(retrieval.embedding_cost_usd + float(generation.llm_cost_usd or 0.0))
         if generation.llm_cost_usd is not None
         else None
     )
-    _record_usage_metrics(
+    record_usage_metrics(
         latency_s=latency_s,
+        retrieval_latency_s=retrieval_latency_s,
+        generation_latency_s=generation_latency_s,
         embedding_tokens=int(retrieval.embedding_tokens),
         llm_in=generation.llm_tokens_in,
         llm_out=generation.llm_tokens_out,
         total_cost=total_cost,
+        route="/query",
     )
-    _record_retrieval_scores(generation.sources)
+    record_retrieval_scores(generation.sources)
     if generation.refusal.is_refusal:
-        _record_refusal(generation.refusal.reason)
-    _record_grounded(generation.answer, generation.sources, generation.refusal.is_refusal)
+        record_refusal(generation.refusal.reason)
+    record_grounded(generation.answer, generation.sources, generation.refusal.is_refusal)
     return QueryResponse(
         answer=generation.answer,
         confidence=generation.confidence,
@@ -207,6 +180,8 @@ def query(
             "total_cost_usd": total_cost,
             "num_hits": len(retrieval.hits),
             "latency_ms": round(latency_s * 1000.0, 2),
+            "retrieval_latency_ms": round(retrieval_latency_s * 1000.0, 2),
+            "generation_latency_ms": round(generation_latency_s * 1000.0, 2),
             "answerability": generation.answerability,
             "citation_coverage": generation.citation_coverage,
             "cost_measured": generation.llm_cost_usd is not None,

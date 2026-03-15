@@ -34,7 +34,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
       const formData = new FormData();
       formData.append("files", file);
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", `${API_BASE_URL}/api/upload`);
+      xhr.open("POST", `${API_BASE_URL}/api/v1/documents/upload`);
       xhr.upload.onprogress = (event) => {
         if (!event.lengthComputable) return;
         const percent = Math.round((event.loaded / event.total) * 100);

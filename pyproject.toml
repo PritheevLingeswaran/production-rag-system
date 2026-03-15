@@ -9,7 +9,7 @@ description = "Production-grade, strict-grounding RAG system"
 requires-python = ">=3.10"
 authors = [{name = "rag-smart-qa contributors"}]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -41,4 +41,12 @@ files = ["src", "tests", "evaluation/resume_metrics.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --cov=src --cov-report=term-missing --cov-report=xml"
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
