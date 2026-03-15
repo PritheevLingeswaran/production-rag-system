@@ -280,9 +280,10 @@ def test_upload_list_detail_summary_and_chat_routes() -> None:
     assert "retrieval_latency_ms" in chat.json()["timing"]
 
 
-def test_health_and_readiness_aliases() -> None:
+def test_health_and_readiness_aliases(monkeypatch: Any) -> None:
     app = create_app()
     app.dependency_overrides[deps.get_document_service] = _fake_document_service
+    monkeypatch.setattr("api.routes.health.validate_runtime_readiness", lambda: None)
     client = TestClient(app)
 
     assert client.get("/health").status_code == 200
@@ -290,3 +291,20 @@ def test_health_and_readiness_aliases() -> None:
     readiness = client.get("/readiness")
     assert readiness.status_code == 200
     assert readiness.json()["checks"]["runtime"] == "ok"
+
+
+def test_readiness_returns_structured_503_when_runtime_is_not_ready(monkeypatch: Any) -> None:
+    app = create_app()
+    app.dependency_overrides[deps.get_document_service] = _fake_document_service
+
+    def _raise_not_ready() -> None:
+        raise RuntimeError("Missing chunks file")
+
+    monkeypatch.setattr("api.routes.health.validate_runtime_readiness", _raise_not_ready)
+    client = TestClient(app)
+
+    readiness = client.get("/readiness")
+    assert readiness.status_code == 503
+    payload = readiness.json()
+    assert payload["error"]["code"] == "runtime_not_ready"
+    assert payload["error"]["message"] == "Missing chunks file"

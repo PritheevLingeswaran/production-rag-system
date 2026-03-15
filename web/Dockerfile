@@ -19,13 +19,9 @@ WORKDIR /app
 
 USER node
 
-COPY --from=builder --chown=node:node /app/.next /app/.next
-COPY --from=builder --chown=node:node /app/public /app/public
-COPY --from=builder --chown=node:node /app/package.json /app/package.json
-COPY --from=builder --chown=node:node /app/package-lock.json /app/package-lock.json
-COPY --from=builder --chown=node:node /app/next.config.mjs /app/next.config.mjs
-COPY --from=deps --chown=node:node /app/node_modules /app/node_modules
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"]
+CMD ["node", "server.js"]
