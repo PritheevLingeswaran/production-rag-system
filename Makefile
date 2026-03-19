@@ -1,16 +1,14 @@
 SHELL := /bin/bash
 
 QUALITY_PATHS := src tests evaluation/resume_metrics.py
-WEB_PACKAGE_MANAGER := npm ci
 PYTHONPATH_EXPORT := PYTHONPATH=src
 
-.PHONY: install fmt lint typecheck test test-web test-all build run api web dev ingest index eval load-test loadtest all docker-build docker-up docker-down stats eval-retrieval eval-grounding stability-60m
+.PHONY: install fmt lint typecheck test build run api dev ingest index eval load-test loadtest all docker-build docker-up docker-down stats eval-retrieval eval-grounding stability-60m
 
 install:
 	python -m pip install -U pip
 	pip install -r requirements.txt
 	pip install -e .
-	cd web && $(WEB_PACKAGE_MANAGER)
 
 fmt:
 	ruff format .
@@ -24,23 +22,14 @@ typecheck:
 test:
 	$(PYTHONPATH_EXPORT) pytest --cov=src --cov-report=term-missing --cov-report=xml -q
 
-test-web:
-	cd web && $(WEB_PACKAGE_MANAGER) && npm run test -- --coverage
-
-test-all: test test-web
-
 build:
 	python -m build
-	cd web && $(WEB_PACKAGE_MANAGER) && npm run build
 
 run:
 	$(PYTHONPATH_EXPORT) python -m scripts.run_api
 
 api:
 	$(PYTHONPATH_EXPORT) python -m scripts.run_api
-
-web:
-	cd web && $(WEB_PACKAGE_MANAGER) && npm run dev
 
 dev:
 	docker compose up --build

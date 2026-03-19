@@ -18,10 +18,6 @@ Core layers:
 
 ```mermaid
 flowchart TD
-  subgraph Browser
-    UI[Next.js workspace]
-  end
-
   subgraph API
     APP[FastAPI app]
     MID[Observability middleware]
@@ -44,7 +40,6 @@ flowchart TD
     EVAL[Evaluation + load test scripts]
   end
 
-  UI --> APP
   APP --> MID
   MID --> ROUTES
   ROUTES --> SERVICES
@@ -85,7 +80,7 @@ flowchart TD
 
 - Operational compatibility endpoints: `/query`, `/metrics`, `/stats`, `/healthz`, `/readiness`
 - Versioned application endpoints: `/api/v1/...`
-- Compatibility aliases: `/api/...` are still mounted for the existing web app surface
+- Compatibility aliases: `/api/...` remain mounted for legacy clients
 
 ## Data stores
 
@@ -110,15 +105,15 @@ flowchart TD
 
 ## Deployment model
 
-- Local process mode: `make api` + `make web`
+- Local process mode: `make api`
 - Local containers: `docker compose up --build`
-- Cloud: documented Render deployment for API + web
+- Cloud: documented Render deployment for the API service
 
 ## Reviewer-visible production traits
 
 - Versioned public contract
 - Structured error responses
 - Health and readiness endpoints
-- CI-backed backend and frontend quality gates
+- CI-backed backend quality gates
 - Reproducible evaluation artifacts
 - Explicit tradeoff and architecture docs

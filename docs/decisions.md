@@ -22,7 +22,7 @@ Why Chroma:
 - Fits the project goal of proving a deployable local baseline.
 
 Why not FAISS only:
-- FAISS is fast and simple, but Chroma gives easier persistence and metadata ergonomics for the web workflow.
+- FAISS is fast and simple, but Chroma gives easier persistence and metadata ergonomics for the document workflow.
 
 Operational limit:
 - Neither default is presented as the final answer for large-scale multi-tenant production. At that point, a managed vector platform or a stronger internal platform choice would be more appropriate.

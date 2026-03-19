@@ -28,16 +28,3 @@ services:
       name: rag-smart-qa-data
       mountPath: /app/data
       sizeGB: 1
-
-  - type: web
-    name: rag-smart-qa-web
-    env: docker
-    plan: starter
-    rootDir: web
-    dockerfilePath: ./Dockerfile
-    envVars:
-      - key: NEXT_PUBLIC_API_BASE_URL
-        fromService:
-          type: web
-          name: rag-smart-qa-api
-          property: host

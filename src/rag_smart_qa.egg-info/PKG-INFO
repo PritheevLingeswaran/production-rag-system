@@ -11,24 +11,21 @@ Dynamic: license-file
 
 # rag-smart-qa
 
-Production-style full-stack RAG system with strict grounding, hybrid retrieval, typed FastAPI contracts, measurable evaluation, Docker deployment, CI coverage, and a Next.js reviewer-facing workspace.
+Production-style RAG API with strict grounding, hybrid retrieval, typed FastAPI contracts, measurable evaluation, and Docker deployment.
 
-## Why this repo is stronger now
+## Highlights
 
-- Tested backend retrieval, fusion, reranking, refusal/grounding, config loading, API routes, and an end-to-end upload -> index -> query flow.
-- Versioned API surface under `/api/v1` with structured error responses and OpenAPI-friendly typed schemas.
-- Container-ready backend and frontend with health checks, non-root runtime users, and Docker Compose wiring.
-- CI runs backend lint/type/test, frontend test/build, and Docker image builds from a clean checkout.
-- Structured logging, request IDs, correlation IDs, and Prometheus metrics for HTTP, retrieval, generation, errors, refusals, and token/cost usage.
-- API key auth, per-client rate limiting, timeout guards, and degraded fallback handling for reviewer-safe production demos.
-- Reproducible evaluation and load-test artifacts saved under `experiments/metrics/`.
+- FastAPI application with versioned routes under `/api/v1` plus operational endpoints such as `/healthz`, `/readyz`, `/metrics`, and `/stats`.
+- Dense, BM25, weighted hybrid, RRF hybrid, and optional rerank retrieval paths.
+- Strict refusal behavior when evidence is weak or citations are invalid.
+- Structured logging, request IDs, correlation IDs, and Prometheus metrics.
+- Reproducible evaluation and load-test artifacts under `experiments/metrics/`.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  U[Reviewer / User] --> W[Next.js Web]
-  W --> A[FastAPI API]
+  C[Client] --> A[FastAPI API]
   A --> M[(SQLite metadata)]
   A --> S[(Local uploads)]
   A --> R[Retriever]
@@ -45,38 +42,12 @@ flowchart LR
 
 More detail: [docs/architecture.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/architecture.md)
 
-## Feature summary
-
-- Multi-file upload, indexing, summaries, document browsing, citations, and session-aware chat UI.
-- Dense, BM25, weighted hybrid, RRF hybrid, and optional rerank retrieval modes.
-- Strict refusal policy when evidence is weak or citations are invalid.
-- Health, readiness, metrics, stats, and versioned query endpoints.
-- Local-first storage and metadata persistence with deployable seams for cloud infrastructure later.
-
-## API summary
-
-- Legacy operational endpoints remain available at `/query`, `/metrics`, `/stats`, `/healthz`, and `/readiness`.
-- Versioned application endpoints live under `/api/v1/...`.
-- Major routes:
-  - `POST /api/v1/query`
-  - `POST /api/v1/documents/upload`
-  - `GET /api/v1/documents`
-  - `GET /api/v1/documents/{id}`
-  - `POST /api/v1/chat/query`
-  - `GET /api/v1/chat/sessions`
-  - `GET /api/v1/citations/{citation_id}`
-  - `GET /api/v1/settings`
-
-Contract examples: [docs/api_contract.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/api_contract.md)
-
-## Testing and coverage
+## Testing
 
 - Backend tests: `pytest -q`
-- Frontend tests with coverage: `cd web && npm run test:coverage`
-- Backend coverage is emitted to `coverage.xml`.
-- Frontend coverage is emitted under `web/coverage/`.
+- Coverage output: `coverage.xml`
 
-### Reproduce CI locally
+### Reproduce local checks
 
 ```bash
 python3 -m venv .venv
@@ -87,44 +58,21 @@ pip install -e .
 ruff check src tests evaluation/resume_metrics.py
 mypy src tests evaluation/resume_metrics.py
 RAG_SKIP_STARTUP_VALIDATION=1 OPENAI_API_KEY=test OPENAI_BASE_URL=http://localhost:9999/v1 OPENAI_ORG='' pytest --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=60 -q
-cd web && npm ci && npm run test:coverage && NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run build
 ```
 
-What is covered in-repo now:
-
-- Retrieval fusion and score-threshold behavior.
-- Lexical reranking.
-- Grounding/refusal and citation enforcement.
-- Config merge + environment interpolation.
-- FastAPI route behavior and structured validation errors.
-- Integration flow using a real upload -> index -> chat query path.
-- Frontend chat submission, upload behavior, and citation inspection.
-
 ## Local development
-
-### Python + web setup
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 make install
-```
-
-### Run the stack without Docker
-
-```bash
 cp .env.example .env
-cp web/.env.example web/.env.local
-
 make ingest
 make index
 make api
-# another terminal
-make web
 ```
 
-- API docs: `http://127.0.0.1:8000/docs`
-- Web app: `http://127.0.0.1:3000`
+API docs: `http://127.0.0.1:8000/docs`
 
 ## Docker and deployment
 
@@ -135,137 +83,34 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- API: `http://127.0.0.1:8000`
-- Web: `http://127.0.0.1:3000`
-- Compose waits on the API readiness probe before starting the web container.
+API: `http://127.0.0.1:8000`
 
-### Cloud target
+### Render
 
-The repo now includes a concrete Render blueprint for the API and web app:
+The checked-in blueprint deploys the API service:
 [render.yaml](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/render.yaml)
 
-Render setup details:
+Deployment details:
 [docs/deployment.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/deployment.md)
-
-Deployment env vars:
-
-- `RAG_API_KEYS` for backend API-key protection
-- `API_CORS_ORIGINS` for allowed frontend origins
-- `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_ORG` when hosted model access is enabled
-
-## Monitoring
-
-- Structured JSON logs via `structlog`.
-- `x-request-id` and `x-correlation-id` added to responses and log context.
-- Prometheus metrics at `/metrics` and `/api/v1/metrics`.
-- Metrics include:
-  - request count
-  - HTTP latency
-  - retrieval latency
-  - rerank latency
-  - generation latency
-  - retrieval score diagnostics
-  - request errors
-  - refusals
-  - fallback/degraded responses
-  - auth failures
-  - rate-limit rejections
-  - token usage
-  - cost usage when available
-
-Example structured log fields:
-
-- `request_id`
-- `correlation_id`
-- `path`
-- `elapsed_s`
-- retrieval stage top scores
-- fallback reason for degraded responses
-
-## Failure handling and API security
-
-- Whitespace-only or malformed queries are rejected with structured `422` responses.
-- Retrieval and generation have timeout guards and return safe refusal/degraded responses on timeout or dependency failure.
-- Missing citations or citation persistence failures are logged and downgraded safely.
-- Backend API key auth can be enabled with `RAG_API_KEYS`.
-- Per-client rate limiting is enabled from config and returns structured `429` responses with `retry-after`.
-
-Monitoring and security notes: [docs/security.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/security.md)
-
-## Reproduce results
-
-```bash
-make ingest
-make index
-make eval
-make load-test
-```
-
-Artifacts are written to `experiments/metrics/`, including:
-
-- `dataset_stats.json`
-- `retrieval_comparison.json`
-- `hallucination_report.json`
-- `refusal_report.json`
-- `cost_report.json`
-- `load_test_report.json`
-- `resume_metrics.json`
-
-Sample data notes: [data/README.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/data/README.md)
-
-## Evaluation snapshot
-
-The repository already includes measured artifacts under `experiments/metrics/`. Reviewers can inspect:
-
-- [experiments/metrics/resume_metrics.json](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/experiments/metrics/resume_metrics.json)
-- [experiments/metrics/retrieval_comparison.json](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/experiments/metrics/retrieval_comparison.json)
-- [experiments/metrics/hallucination_report.json](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/experiments/metrics/hallucination_report.json)
-
-## CI status
-
-GitHub Actions workflow: [ci.yml](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/.github/workflows/ci.yml)
-
-It runs:
-
-- backend lint
-- backend typecheck
-- backend tests with coverage
-- frontend tests with coverage
-- frontend build
-- backend Docker build
-- frontend Docker build
-
-## Production-readiness
-
-- Deployable to Render with a checked-in blueprint, health checks, persistent data disk, and Dockerized API/web services.
-- Structured observability with request IDs, JSON logs, Prometheus metrics, and stage-level latency tracking.
-- Failure handling for validation errors, retrieval/generation timeouts, downstream dependency failures, and degraded citation behavior.
-- Practical API protection with env-configured API keys, locked-down CORS, and in-memory rate limiting that works in local/dev/demo deployments.
 
 ## Project structure
 
 ```text
-src/api/               FastAPI app, middleware, route composition, structured errors
+src/api/               FastAPI app, middleware, routes, structured errors
 src/services/          Upload, metadata, chat, summary, storage services
 src/retrieval/         BM25, dense retrieval, hybrid fusion, reranking
 src/generation/        Grounded answer generation and refusal logic
-web/                   Next.js reviewer-facing workspace
 tests/                 Backend unit, API, and integration tests
 docs/                  Architecture, API, tradeoffs, decisions, deployment, security
 experiments/metrics/   Saved evaluation and load-test artifacts
 ```
 
-## Engineering decisions and limits
+## Docs
 
-- Architecture: [docs/architecture.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/architecture.md)
+- API contract: [docs/api_contract.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/api_contract.md)
+- Security notes: [docs/security.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/security.md)
 - Decisions: [docs/decisions.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/decisions.md)
 - Tradeoffs: [docs/tradeoffs.md](/Users/thamaraiselvang/Pritheev%20Projects/rag-smart-qa/docs/tradeoffs.md)
-
-## Current known weak spots
-
-- Docker runtime was prepared and validated at the file level, but this environment does not have the `docker` CLI installed, so Compose could not be executed here.
-- Coverage is materially improved, but some lower-level vector-store and OpenAI client branches are still less exercised than the core application paths.
-- The frontend coverage report is still concentrated around critical behaviors rather than full-page rendering breadth.
 
 ## License
 
