@@ -40,7 +40,7 @@ def load_settings() -> Settings:
     # Load .env first so YAML interpolation can see env vars.
     load_dotenv(override=False)
 
-    env = os.environ.get("RAG_ENV", "dev")
+    env = os.environ.get("RAG_ENV") or "dev"
     config_dir = Path(os.environ.get("RAG_CONFIG_DIR", "configs"))
 
     base_path = config_dir / "base.yaml"

@@ -41,8 +41,14 @@ class OpenAIClient:
         timeout_s: float = 30.0,
         max_retries: int = 3,
     ) -> None:
+        normalized_api_key = api_key or None
+        normalized_base_url = base_url or None
+        normalized_org = organization or None
         self._client = OpenAI(
-            api_key=api_key, base_url=base_url, organization=organization, timeout=timeout_s
+            api_key=normalized_api_key,
+            base_url=normalized_base_url,
+            organization=normalized_org,
+            timeout=timeout_s,
         )
         self._max_retries = max_retries
 

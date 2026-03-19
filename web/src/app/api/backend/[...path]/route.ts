@@ -19,7 +19,11 @@ type RouteContext = {
 
 async function proxy(request: NextRequest, { params }: RouteContext) {
   const session = await auth();
-  if (!session?.user) {
+  const allowDevFallback =
+    process.env.NODE_ENV !== "production" &&
+    process.env.ALLOW_LOCAL_DEV_PROXY_FALLBACK !== "0";
+
+  if (!session?.user && !allowDevFallback) {
     return NextResponse.json(
       {
         error: {
@@ -37,7 +41,10 @@ async function proxy(request: NextRequest, { params }: RouteContext) {
 
   const headers = new Headers();
   headers.set("x-api-key", BACKEND_API_KEY);
-  headers.set("x-user-id", session.user.email || session.user.id || "web-user");
+  headers.set(
+    "x-user-id",
+    session?.user?.email || session?.user?.id || "local-dev-user"
+  );
 
   const contentType = request.headers.get("content-type");
   let body: BodyInit | undefined;
