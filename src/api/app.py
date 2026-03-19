@@ -16,13 +16,19 @@ from api.errors import (
 )
 from api.middleware import ObservabilityMiddleware
 from api.routes import router
+from utils.logging import get_logger
+
+log = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if os.environ.get("RAG_SKIP_STARTUP_VALIDATION", "0") != "1":
-        validate_runtime_readiness()
-        _ = get_retriever()
+        try:
+            validate_runtime_readiness()
+            _ = get_retriever()
+        except Exception as exc:
+            log.warning("startup.runtime_not_ready", error=str(exc))
     yield
 
 

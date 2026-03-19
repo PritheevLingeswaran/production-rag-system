@@ -10,13 +10,17 @@ const PROTECTED_PREFIXES = [
   "/settings",
 ];
 
+const allowDevGuest =
+  process.env.NODE_ENV !== "production" &&
+  process.env.ALLOW_LOCAL_DEV_PROXY_FALLBACK !== "0";
+
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
   const isProtected = PROTECTED_PREFIXES.some((p) =>
     nextUrl.pathname.startsWith(p)
   );
 
-  if (isProtected && !session) {
+  if (isProtected && !session && !allowDevGuest) {
     const signInUrl = new URL("/signin", nextUrl.origin);
     signInUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     return NextResponse.redirect(signInUrl);

@@ -201,6 +201,16 @@ class MetadataService:
             rows = conn.execute(query, params).fetchall()
         return [self._row_to_document(row) for row in rows]
 
+    def count_documents(self, owner_id: str | None = None) -> int:
+        query = "SELECT COUNT(*) FROM documents"
+        params: tuple[Any, ...] = ()
+        if owner_id is not None:
+            query += " WHERE owner_id = ?"
+            params = (owner_id,)
+        with self.connection() as conn:
+            value = conn.execute(query, params).fetchone()[0]
+        return int(value)
+
     def delete_document(self, document_id: str, owner_id: str) -> dict[str, Any] | None:
         document = self.get_document(document_id, owner_id)
         if document is None:

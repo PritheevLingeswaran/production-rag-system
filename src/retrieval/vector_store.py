@@ -107,6 +107,10 @@ class VectorStore(ABC):
     def save(self) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def reset(self) -> None:
+        raise NotImplementedError
+
     @classmethod
     @abstractmethod
     def load(cls, settings: Settings) -> VectorStore:
@@ -189,6 +193,11 @@ class ChromaVectorStore(VectorStore):
     def save(self) -> None:
         return
 
+    def reset(self) -> None:
+        existing_ids = self._collection.get(include=[]).get("ids", [])
+        if existing_ids:
+            self._collection.delete(ids=existing_ids)
+
     @classmethod
     def load(cls, settings: Settings) -> ChromaVectorStore:
         return cls(settings)
@@ -269,6 +278,10 @@ class FaissVectorStore(VectorStore):
                 break
 
         return hits
+
+    def reset(self) -> None:
+        self.index = None
+        self.chunks = []
 
     def save(self) -> None:
         if self.index is None:

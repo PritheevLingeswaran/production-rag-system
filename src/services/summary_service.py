@@ -41,7 +41,11 @@ class SummaryService:
             }
 
         model = self.settings.summaries.model or self.settings.generation.model
-        if self.settings.summaries.enabled and self.settings.embeddings.openai.api_key:
+        allow_remote_summary = (
+            self.settings.app.environment != "dev"
+            and bool(self.settings.embeddings.openai.api_key)
+        )
+        if self.settings.summaries.enabled and allow_remote_summary:
             try:
                 prompt = (
                     "You are summarizing a document for a professional RAG workspace. "

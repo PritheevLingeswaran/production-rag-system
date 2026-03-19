@@ -2,10 +2,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.deps import get_document_service, get_settings, validate_runtime_readiness
+from api.deps import (
+    get_document_service,
+    get_metadata_service,
+    get_settings,
+    validate_runtime_readiness,
+)
 from schemas.api_common import ApiErrorResponse
 from schemas.query import HealthResponse
 from services.document_service import DocumentService
+from services.metadata_service import MetadataService
 from utils.settings import Settings
 
 router = APIRouter(tags=["health"])
@@ -27,11 +33,19 @@ def health(settings: Settings = Depends(get_settings)) -> HealthResponse:  # noq
 )
 def readiness(
     document_service: DocumentService = Depends(get_document_service),  # noqa: B008
+    metadata: MetadataService = Depends(get_metadata_service),  # noqa: B008
     settings: Settings = Depends(get_settings),  # noqa: B008
 ) -> HealthResponse:
     try:
         validate_runtime_readiness()
     except Exception as exc:
+        if metadata.count_documents() == 0:
+            _ = document_service
+            return HealthResponse(
+                status="ok",
+                environment=settings.app.environment,
+                checks={"runtime": "empty", "documents": "none"},
+            )
         raise HTTPException(
             status_code=503,
             detail={"code": "runtime_not_ready", "message": str(exc)},

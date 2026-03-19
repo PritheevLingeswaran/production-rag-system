@@ -203,6 +203,33 @@ class FakeChatService:
 
 
 class FakeMetadataService:
+    def __init__(self, document_exists: bool = True, document_count: int = 1) -> None:
+        self.document_exists = document_exists
+        self.document_count = document_count
+
+    def get_document(self, document_id: str, owner_id: str) -> dict[str, Any] | None:
+        if not self.document_exists:
+            return None
+        return {
+            "id": document_id,
+            "owner_id": owner_id,
+            "filename": "guide.txt",
+            "stored_path": "/tmp/doc-1.txt",
+            "file_type": "txt",
+            "size_bytes": 12,
+            "pages": 1,
+            "chunks_created": 2,
+            "upload_time": "2026-03-13T00:00:00Z",
+            "indexing_status": "ready",
+            "summary_status": "ready",
+            "collection_name": None,
+            "error_message": None,
+            "metadata": {},
+        }
+
+    def count_documents(self, owner_id: str | None = None) -> int:
+        return self.document_count
+
     def get_summary(self, document_id: str) -> dict[str, Any]:
         return {
             "document_id": document_id,
@@ -302,6 +329,9 @@ def test_health_and_readiness_aliases(monkeypatch: Any) -> None:
 def test_readiness_returns_structured_503_when_runtime_is_not_ready(monkeypatch: Any) -> None:
     app = create_app()
     app.dependency_overrides[deps.get_document_service] = _fake_document_service
+    app.dependency_overrides[deps.get_metadata_service] = lambda: FakeMetadataService(
+        document_count=1
+    )
 
     def _raise_not_ready() -> None:
         raise RuntimeError("Missing chunks file")

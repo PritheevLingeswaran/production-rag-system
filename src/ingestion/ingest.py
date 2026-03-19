@@ -44,10 +44,8 @@ def _pages_from_path(path: Path) -> list[Page]:
     raise ValueError(f"Unsupported file type: {path.suffix}")
 
 
-def ingest_documents(settings: Settings) -> list[Chunk]:
-    docs = list(iter_documents(settings.paths.raw_dir, settings.ingestion.supported_extensions))
-    log.info("ingest.scan", raw_dir=settings.paths.raw_dir, num_files=len(docs))
-
+def _ingest_paths(settings: Settings, docs: list[Path], *, source_label: str) -> list[Chunk]:
+    log.info("ingest.scan", raw_dir=source_label, num_files=len(docs))
     chunks: list[Chunk] = []
     seen_doc_hashes: set[str] = set()
     for doc in docs:
@@ -84,6 +82,15 @@ def ingest_documents(settings: Settings) -> list[Chunk]:
 
     log.info("ingest.complete", num_chunks=len(chunks))
     return chunks
+
+
+def ingest_documents(settings: Settings) -> list[Chunk]:
+    docs = list(iter_documents(settings.paths.raw_dir, settings.ingestion.supported_extensions))
+    return _ingest_paths(settings, docs, source_label=settings.paths.raw_dir)
+
+
+def ingest_document_paths(settings: Settings, docs: list[Path]) -> list[Chunk]:
+    return _ingest_paths(settings, docs, source_label="metadata_paths")
 
 
 def write_chunks(settings: Settings, chunks: Iterable[Chunk]) -> Path:

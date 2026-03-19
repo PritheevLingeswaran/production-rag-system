@@ -68,6 +68,11 @@ class FakePersistentVectorStore(VectorStore):
     def save(self) -> None:
         self._registry[self.settings.paths.indexes_dir] = (list(self.chunks), list(self.vectors))
 
+    def reset(self) -> None:
+        self.chunks = []
+        self.vectors = []
+        self._registry[self.settings.paths.indexes_dir] = ([], [])
+
     @classmethod
     def load(cls, settings: Any) -> FakePersistentVectorStore:
         return cls(settings)

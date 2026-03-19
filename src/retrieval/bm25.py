@@ -140,7 +140,7 @@ class BM25PersistentIndex:
         self.tokenized_docs = tokenized_docs
         self.tokenizer_config = tokenizer_config or BM25Config()
         self._normalizer = BM25TextNormalizer(self.tokenizer_config)
-        self._bm25 = BM25Okapi(self.tokenized_docs)
+        self._bm25 = BM25Okapi(self.tokenized_docs) if self.tokenized_docs else None
 
     @classmethod
     def build(
@@ -208,6 +208,9 @@ class BM25PersistentIndex:
         filter_fn takes chunk_id and returns True if that chunk is eligible.
         We still score the full corpus (requirement), but we drop ineligible items from the ranked list.
         """
+
+        if self._bm25 is None:
+            return []
 
         q_tokens = self._normalizer.tokenize(q)
         scores = self._bm25.get_scores(q_tokens)

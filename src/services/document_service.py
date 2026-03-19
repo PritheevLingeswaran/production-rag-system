@@ -6,7 +6,7 @@ from typing import Any, cast
 from fastapi import HTTPException, UploadFile
 
 from embeddings.factory import build_embeddings_backend
-from ingestion.ingest import Chunk, ingest_documents, write_chunks
+from ingestion.ingest import Chunk, ingest_document_paths, write_chunks
 from ingestion.loaders import Page, load_html, load_pdf, load_txt
 from retrieval.bm25 import BM25PersistentIndex
 from retrieval.corpus import load_chunks_jsonl
@@ -111,7 +111,12 @@ class DocumentService:
         document = self.metadata.get_document(document_id, owner_id)
         if document is None:
             raise HTTPException(status_code=404, detail="Document not found.")
-        page_preview = self._read_preview(document["stored_path"])
+        try:
+            page_preview = self._read_preview(document["stored_path"])
+        except Exception as exc:
+            page_preview = []
+            if not document.get("error_message"):
+                document["error_message"] = str(exc)
         chunks = self._chunks_for_document(document["stored_path"])
         summary = self.metadata.get_summary(document_id)
         return {
@@ -145,20 +150,34 @@ class DocumentService:
 
     def rebuild_indexes(self, *, owner_id: str) -> None:
         documents = self.metadata.list_documents(owner_id)
+        existing_paths: list[Path] = []
+        active_documents: list[dict[str, Any]] = []
         for document in documents:
-            self.metadata.set_document_status(
-                document["id"],
-                owner_id,
-                indexing_status="processing",
-                error_message=None,
-            )
+            path = Path(document["stored_path"])
+            if path.exists():
+                active_documents.append(document)
+                existing_paths.append(path)
+                self.metadata.set_document_status(
+                    document["id"],
+                    owner_id,
+                    indexing_status="processing",
+                    error_message=None,
+                )
+            else:
+                self.metadata.set_document_status(
+                    document["id"],
+                    owner_id,
+                    indexing_status="failed",
+                    summary_status="failed" if self.settings.summaries.enabled else "disabled",
+                    error_message=f"Missing uploaded file at {path}",
+                )
 
-        chunks = ingest_documents(self.settings)
+        chunks = ingest_document_paths(self.settings, existing_paths)
         write_chunks(self.settings, chunks)
         self._build_indexes_from_chunks()
         chunks_by_source = self._group_chunks_by_source(chunks)
 
-        for document in documents:
+        for document in active_documents:
             path = Path(document["stored_path"])
             try:
                 pages = _load_pages(path)
@@ -260,6 +279,7 @@ class DocumentService:
 
         embedder = build_embeddings_backend(self.settings)
         store: VectorStore = build_vector_store(self.settings)
+        store.reset()
         batch = int(self.settings.embeddings.batch_size)
         for start in range(0, len(chunks), batch):
             batch_chunks = chunks[start : start + batch]

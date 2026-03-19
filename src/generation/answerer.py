@@ -326,6 +326,39 @@ def _fallback_extract_answer(question: str, hits: list[SearchHit]) -> tuple[str,
         if titles_set:
             return str(len(titles_set)), False, ""
 
+    query_terms = {token for token in re.findall(r"[a-z0-9]+", q) if len(token) > 2}
+    candidates: list[tuple[int, str, SearchHit]] = []
+    for hit in hits[:5]:
+        text = hit.chunk.text.replace("\n", " ").strip()
+        parts = [
+            segment.strip()
+            for segment in re.split(r"(?<=[.!?])\s+|\s*▪\s*|\s*•\s*", text)
+            if segment.strip()
+        ]
+        for part in parts:
+            normalized_part = re.sub(r"\s+", " ", part.lower())
+            overlap = sum(1 for term in query_terms if term in normalized_part)
+            score = overlap * 10 + int(hit.score * 1000)
+            if overlap > 0 or not query_terms:
+                candidates.append((score, part, hit))
+
+    if candidates:
+        candidates.sort(key=lambda item: item[0], reverse=True)
+        selected: list[str] = []
+        used_chunks: list[str] = []
+        for _, snippet, hit in candidates:
+            if snippet in selected:
+                continue
+            selected.append(snippet)
+            if hit.chunk.chunk_id not in used_chunks:
+                used_chunks.append(hit.chunk.chunk_id)
+            if len(selected) >= 2:
+                break
+        answer = " ".join(selected).strip()
+        if answer:
+            citations = " ".join(f"[{chunk_id}]" for chunk_id in used_chunks[:2])
+            return f"{answer} {citations}".strip(), False, ""
+
     return (
         "I found relevant sources, but I could not produce a reliable final answer.",
         True,
@@ -347,7 +380,9 @@ class Answerer:
         self.system = load_prompt("prompts/system_instructions.txt")
         self.template = load_prompt("prompts/answer_with_citations.txt")
         self.refusal_policy = load_prompt("prompts/refusal_policy.txt")
-        self._disable_remote_generation = not bool(oai.api_key)
+        self._disable_remote_generation = (
+            self.settings.app.environment == "dev" or not bool(oai.api_key)
+        )
 
     def generate(self, question: str, hits: list[SearchHit]) -> GenerationOutput:
         log.info("generation.started", question_chars=len(question), hits=len(hits))
