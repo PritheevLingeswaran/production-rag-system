@@ -6,7 +6,7 @@ from contextlib import suppress
 from pathlib import Path
 
 # Make this repository's packages and scripts win over unrelated editable installs.
-SRC_ROOT = Path(__file__).resolve().parent
+SRC_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = SRC_ROOT.parent
 for path in (str(REPO_ROOT), str(SRC_ROOT)):
     with suppress(ValueError):
