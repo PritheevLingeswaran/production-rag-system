@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { chatApi } from "../../api/chat";
+import { documentsApi } from "../../api/documents";
 import type { Message } from "../../types";
 import Sources from "../Sources/Sources";
 import Composer from "../Composer/Composer";
@@ -8,14 +9,20 @@ import "./ChatPanel.css";
 interface Props {
   sessionId?: string;
   onSessionCreated: (id: string) => void;
+  onDocumentsChanged: () => void;
 }
 
 type ChatStatus = "idle" | "searching" | "generating" | "error";
 
-export default function ChatPanel({ sessionId, onSessionCreated }: Props) {
+export default function ChatPanel({
+  sessionId,
+  onSessionCreated,
+  onDocumentsChanged,
+}: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const activeSession = useRef<string | undefined>(sessionId);
 
@@ -94,6 +101,28 @@ export default function ChatPanel({ sessionId, onSessionCreated }: Props) {
     }
   }, [onSessionCreated]);
 
+  const uploadDocument = useCallback(async (file: File) => {
+    setUploading(true);
+    setError(null);
+    try {
+      const upload = await documentsApi.upload(file);
+      const document = await documentsApi.waitForIndexing(upload.id);
+      onDocumentsChanged();
+      if (document.indexing_status === "failed") {
+        throw new Error(
+          document.error_message ||
+            "This file could not be indexed. Try a text-based PDF, TXT, MD, or HTML file."
+        );
+      }
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Upload failed.";
+      setError(text);
+      throw err;
+    } finally {
+      setUploading(false);
+    }
+  }, [onDocumentsChanged]);
+
   const isEmpty = messages.length === 0 && status === "idle";
 
   return (
@@ -119,7 +148,12 @@ export default function ChatPanel({ sessionId, onSessionCreated }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      <Composer onSend={send} disabled={status !== "idle" && status !== "error"} />
+      <Composer
+        onSend={send}
+        onUpload={uploadDocument}
+        disabled={(status !== "idle" && status !== "error") || uploading}
+        uploadDisabled={uploading}
+      />
     </div>
   );
 }

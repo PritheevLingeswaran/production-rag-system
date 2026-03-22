@@ -3,10 +3,15 @@ import { documentsApi } from "../../api/documents";
 import type { Document, DocumentSummary, UploadResponseItem } from "../../types";
 import "./DocumentsView.css";
 
-export default function DocumentsView() {
+interface Props {
+  refreshKey?: number;
+}
+
+export default function DocumentsView({ refreshKey = 0 }: Props) {
   const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [summary, setSummary] = useState<DocumentSummary | null>(null);
@@ -15,6 +20,7 @@ export default function DocumentsView() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
+    setLoading(true);
     try {
       const data = await documentsApi.list();
       setDocs(data);
@@ -27,7 +33,7 @@ export default function DocumentsView() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [refreshKey]);
 
   const uploadFile = async (file: File) => {
     if (!file) return;
@@ -73,6 +79,24 @@ export default function DocumentsView() {
     }
   };
 
+  const deleteDocument = async (event: React.MouseEvent, doc: Document) => {
+    event.stopPropagation();
+    setUploadError(null);
+    setDeletingId(doc.id);
+    try {
+      await documentsApi.delete(doc.id);
+      setDocs((current) => current.filter((item) => item.id !== doc.id));
+      if (selectedDoc?.id === doc.id) {
+        setSelectedDoc(null);
+        setSummary(null);
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="documents-view">
       <div className="documents-header">
@@ -80,7 +104,7 @@ export default function DocumentsView() {
           <h1 className="documents-title">Documents</h1>
           <p className="documents-sub">
             {docs.length > 0
-              ? `${docs.length} document${docs.length !== 1 ? "s" : ""} indexed`
+              ? `${docs.length} uploaded document${docs.length !== 1 ? "s" : ""} available`
               : "Upload documents to start asking questions"}
           </p>
         </div>
@@ -98,7 +122,7 @@ export default function DocumentsView() {
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.txt,.md,.docx,.csv"
+              accept=".pdf,.txt,.md,.html,.htm"
               multiple
               className="visually-hidden"
               onChange={(e) => handleFiles(e.target.files)}
@@ -115,7 +139,7 @@ export default function DocumentsView() {
                 <p className="drop-zone-label">
                   {dragging ? "Drop to upload" : "Drop files here or click to browse"}
                 </p>
-                <p className="drop-zone-hint">PDF, TXT, MD, DOCX, CSV</p>
+                <p className="drop-zone-hint">PDF, TXT, MD, HTML</p>
               </>
             )}
           </div>
@@ -156,8 +180,21 @@ export default function DocumentsView() {
                         {" · "}
                         {formatDate(doc.upload_time)}
                       </span>
+                      {doc.error_message && (
+                        <span className="doc-error-text">{doc.error_message}</span>
+                      )}
                     </div>
                     <StatusBadge status={doc.indexing_status} />
+                    <button
+                      className="doc-delete"
+                      type="button"
+                      onClick={(event) => deleteDocument(event, doc)}
+                      disabled={deletingId === doc.id}
+                      title="Delete document"
+                      aria-label={`Delete ${doc.filename}`}
+                    >
+                      {deletingId === doc.id ? <SpinnerIcon /> : <TrashIcon />}
+                    </button>
                     <ChevronIcon rotated={selectedDoc?.id === doc.id} />
                   </button>
 
@@ -277,6 +314,23 @@ function AlertIcon() {
       <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
       <path d="M7 4.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
       <circle cx="7" cy="9.5" r="0.6" fill="currentColor" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M3 4h8M5.2 4V3h3.6v1M4 4l.45 6.2a1 1 0 001 .8h2.1a1 1 0 001-.8L9.2 4M5.5 6v3M8.5 6v3" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="spin">
+      <circle cx="7" cy="7" r="5" stroke="currentColor" strokeOpacity="0.22" strokeWidth="1.2" />
+      <path d="M7 2a5 5 0 015 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 }

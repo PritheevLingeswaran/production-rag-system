@@ -84,4 +84,6 @@ jobs:
           push: false
           tags: rag-smart-qa-api:test
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
+          provenance: false
+          sbom: false

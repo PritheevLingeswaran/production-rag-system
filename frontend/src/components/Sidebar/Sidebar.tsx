@@ -134,6 +134,23 @@ export default function Sidebar({
             </ul>
           )}
         </div>
+
+        <div className="sidebar-auth">
+          <button
+            className={`sidebar-auth-link ${activeView === "login" ? "sidebar-auth-link--active" : ""}`}
+            onClick={() => onViewChange("login")}
+          >
+            <LoginIcon />
+            Log in
+          </button>
+          <button
+            className={`sidebar-auth-link ${activeView === "signup" ? "sidebar-auth-link--active" : ""}`}
+            onClick={() => onViewChange("signup")}
+          >
+            <UserPlusIcon />
+            Sign up
+          </button>
+        </div>
       </aside>
     </>
   );
@@ -199,6 +216,26 @@ function TrashIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
       <path d="M2 3.5h9M5 3.5V2.5h3v1M5.5 6v3.5M7.5 6v3.5M3 3.5l.5 7.5h6L10 3.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LoginIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M9.5 2.5h2A1.5 1.5 0 0113 4v7a1.5 1.5 0 01-1.5 1.5h-2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+      <path d="M7 10.5L10 7.5L7 4.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 7.5H2.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UserPlusIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <circle cx="5.5" cy="5" r="2.25" stroke="currentColor" strokeWidth="1.25" />
+      <path d="M1.75 12c.55-1.92 2.03-2.88 3.75-2.88S8.7 10.08 9.25 12" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+      <path d="M11.25 4.25v3.5M9.5 6h3.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
     </svg>
   );
 }

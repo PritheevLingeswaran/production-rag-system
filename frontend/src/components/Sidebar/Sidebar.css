@@ -204,6 +204,38 @@
   display: none;
 }
 
+.sidebar-auth {
+  padding: 12px 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+  display: grid;
+  gap: 6px;
+}
+
+.sidebar-auth-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.015);
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+  border: 1px solid transparent;
+  text-align: left;
+}
+
+.sidebar-auth-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.sidebar-auth-link--active {
+  color: var(--text-primary);
+  background: rgba(200, 169, 110, 0.08);
+  border-color: rgba(200, 169, 110, 0.18);
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;

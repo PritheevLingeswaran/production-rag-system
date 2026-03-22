@@ -158,9 +158,40 @@
   color: var(--text-muted);
 }
 
+.doc-error-text {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--red);
+  line-height: 1.4;
+}
+
 .doc-chevron {
   flex-shrink: 0;
   color: var(--text-muted);
+}
+
+.doc-delete {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.doc-delete:hover:not(:disabled) {
+  color: var(--red);
+  border-color: rgba(224, 82, 82, 0.22);
+  background: rgba(224, 82, 82, 0.08);
+}
+
+.doc-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .status-badge {

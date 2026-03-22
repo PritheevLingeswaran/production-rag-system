@@ -16,7 +16,10 @@ from services.metadata_service import MetadataService
 from services.storage_service import StorageService
 from services.summary_service import SummaryService
 from utils.config import ensure_dirs
+from utils.logging import get_logger
 from utils.settings import Settings
+
+log = get_logger(__name__)
 
 
 def _load_pages(path: Path) -> list[Page]:
@@ -150,6 +153,7 @@ class DocumentService:
 
     def rebuild_indexes(self, *, owner_id: str) -> None:
         documents = self.metadata.list_documents(owner_id)
+        log.info("documents.rebuild.started", owner_id=owner_id, document_count=len(documents))
         existing_paths: list[Path] = []
         active_documents: list[dict[str, Any]] = []
         for document in documents:
@@ -173,6 +177,13 @@ class DocumentService:
                 )
 
         chunks = ingest_document_paths(self.settings, existing_paths)
+        log.info(
+            "documents.rebuild.ingested",
+            owner_id=owner_id,
+            active_documents=len(active_documents),
+            chunk_count=len(chunks),
+            sample_chunk=(chunks[0].text[:180] if chunks else ""),
+        )
         write_chunks(self.settings, chunks)
         self._build_indexes_from_chunks()
         chunks_by_source = self._group_chunks_by_source(chunks)
@@ -183,6 +194,44 @@ class DocumentService:
                 pages = _load_pages(path)
                 page_count = len(pages)
                 text = "\n".join(page.text for page in pages)
+                chunk_count = len(chunks_by_source.get(str(path), []))
+
+                if not text.strip():
+                    summary_status = "failed" if self.settings.summaries.enabled else "disabled"
+                    if self.settings.summaries.enabled:
+                        summary_payload = self.summary_service.generate_summary(
+                            document=document,
+                            text=text,
+                        )
+                        self.metadata.upsert_summary(document["id"], summary_payload)
+                        summary_status = summary_payload["status"]
+                    self.metadata.set_document_status(
+                        document["id"],
+                        owner_id,
+                        indexing_status="failed",
+                        pages=page_count,
+                        chunks_created=chunk_count,
+                        summary_status=summary_status,
+                        error_message=(
+                            "Document has no extractable text. It may be a scanned or image-only file."
+                        ),
+                    )
+                    continue
+
+                if chunk_count == 0:
+                    self.metadata.set_document_status(
+                        document["id"],
+                        owner_id,
+                        indexing_status="failed",
+                        pages=page_count,
+                        chunks_created=0,
+                        summary_status="failed" if self.settings.summaries.enabled else "disabled",
+                        error_message=(
+                            "Document text was detected, but no searchable chunks were created."
+                        ),
+                    )
+                    continue
+
                 summary_status = "ready"
                 if self.settings.summaries.enabled:
                     self.metadata.set_document_status(
@@ -190,7 +239,7 @@ class DocumentService:
                         owner_id,
                         indexing_status="processing",
                         pages=page_count,
-                        chunks_created=len(chunks_by_source.get(str(path), [])),
+                        chunks_created=chunk_count,
                         summary_status="processing",
                     )
                     summary_payload = self.summary_service.generate_summary(
@@ -204,9 +253,16 @@ class DocumentService:
                     owner_id,
                     indexing_status="ready",
                     pages=page_count,
-                    chunks_created=len(chunks_by_source.get(str(path), [])),
+                    chunks_created=chunk_count,
                     summary_status=summary_status,
                     error_message=None,
+                )
+                log.info(
+                    "documents.rebuild.document_ready",
+                    document_id=document["id"],
+                    filename=document["filename"],
+                    page_count=page_count,
+                    chunk_count=chunk_count,
                 )
             except Exception as exc:
                 self.metadata.set_document_status(
@@ -216,7 +272,14 @@ class DocumentService:
                     summary_status="failed" if self.settings.summaries.enabled else "disabled",
                     error_message=str(exc),
                 )
+                log.warning(
+                    "documents.rebuild.document_failed",
+                    document_id=document["id"],
+                    filename=document["filename"],
+                    error=str(exc),
+                )
         self._reset_runtime_caches()
+        log.info("documents.rebuild.completed", owner_id=owner_id, active_documents=len(active_documents))
 
     def get_dashboard(self, owner_id: str) -> dict[str, Any]:
         stats = self.metadata.get_stats(owner_id)
@@ -270,6 +333,11 @@ class DocumentService:
     def _build_indexes_from_chunks(self) -> None:
         chunks_path = Path(self.settings.paths.chunks_dir) / "chunks.jsonl"
         chunks, _ = load_chunks_jsonl(str(chunks_path))
+        log.info(
+            "documents.index_build.started",
+            chunk_count=len(chunks),
+            sample_chunk_id=(chunks[0].chunk_id if chunks else None),
+        )
         bm25_dir = Path(self.settings.paths.indexes_dir) / "bm25"
         texts_by_id = {chunk.chunk_id: chunk.text for chunk in chunks}
         BM25PersistentIndex.build(
@@ -286,6 +354,12 @@ class DocumentService:
             embeddings = embedder.embed_texts([chunk.text for chunk in batch_chunks])
             store.add(batch_chunks, embeddings.vectors)
         store.save()
+        log.info(
+            "documents.index_build.completed",
+            chunk_count=len(chunks),
+            batch_size=batch,
+            bm25_docs=len(texts_by_id),
+        )
 
     @staticmethod
     def _group_chunks_by_source(chunks: list[Chunk]) -> dict[str, list[Chunk]]:

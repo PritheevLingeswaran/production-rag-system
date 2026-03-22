@@ -461,6 +461,66 @@ class Retriever:
         debug["threshold_applied"] = threshold_applied
         debug["embedding_tokens"] = int(emb.total_tokens)
 
+        if not hits:
+            fallback_debug: dict[str, Any] = {}
+            if do_rewrite and query != question:
+                raw_retry = self.retrieve_with_debug(
+                    question=question,
+                    top_k=top_k,
+                    filter_source_substr=filter_source_substr,
+                    rewrite_override=False,
+                    mode_override=mode,
+                )
+                fallback_debug["raw_query_same_mode_hits"] = len(raw_retry.hits)
+                if raw_retry.hits:
+                    merged_debug = raw_retry.debug or {}
+                    merged_debug["fallback_origin"] = debug
+                    merged_debug["fallback_strategy"] = "raw_query_same_mode"
+                    log.info(
+                        "retrieval.fallback_success",
+                        strategy="raw_query_same_mode",
+                        mode=mode,
+                        recovered_hits=len(raw_retry.hits),
+                    )
+                    output = RetrievalOutput(
+                        query_used=raw_retry.query_used,
+                        hits=raw_retry.hits,
+                        embedding_tokens=emb.total_tokens,
+                        embedding_cost_usd=emb.cost_usd,
+                        debug=merged_debug,
+                    )
+                    self._set_cached(cache_key, output)
+                    return output
+
+            bm25_retry = self.retrieve_with_debug(
+                question=question,
+                top_k=max(int(top_k), min(20, int(self.settings.retrieval.hybrid.bm25_k))),
+                filter_source_substr=filter_source_substr,
+                rewrite_override=False,
+                mode_override="bm25",
+            )
+            fallback_debug["raw_query_bm25_hits"] = len(bm25_retry.hits)
+            debug["fallback_attempted"] = fallback_debug
+            if bm25_retry.hits:
+                merged_debug = bm25_retry.debug or {}
+                merged_debug["fallback_origin"] = debug
+                merged_debug["fallback_strategy"] = "raw_query_bm25"
+                log.info(
+                    "retrieval.fallback_success",
+                    strategy="raw_query_bm25",
+                    mode=mode,
+                    recovered_hits=len(bm25_retry.hits),
+                )
+                output = RetrievalOutput(
+                    query_used=bm25_retry.query_used,
+                    hits=bm25_retry.hits,
+                    embedding_tokens=emb.total_tokens,
+                    embedding_cost_usd=emb.cost_usd,
+                    debug=merged_debug,
+                )
+                self._set_cached(cache_key, output)
+                return output
+
         output = RetrievalOutput(
             query_used=query,
             hits=hits,

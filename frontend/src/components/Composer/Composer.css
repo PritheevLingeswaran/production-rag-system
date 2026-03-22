@@ -6,6 +6,92 @@
   flex-shrink: 0;
 }
 
+.composer-attachments {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.attachment-card {
+  width: 228px;
+  min-width: 228px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.018);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attachment-icon-shell {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.attachment-badge {
+  padding: 7px 9px;
+  border-radius: 12px;
+  background: rgba(18, 18, 20, 0.78);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.attachment-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attachment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-status {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.attachment-status--ready {
+  color: var(--accent);
+}
+
+.attachment-status--processing {
+  color: var(--text-secondary);
+}
+
+.attachment-status--failed {
+  color: var(--red);
+}
+
 .composer {
   display: flex;
   align-items: flex-end;
@@ -19,6 +105,31 @@
 
 .composer:focus-within {
   border-color: var(--accent);
+}
+
+.composer-upload {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.composer-upload:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.composer-upload:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .composer-input {
@@ -83,5 +194,10 @@
 @media (max-width: 600px) {
   .composer-wrap {
     padding: 10px 16px 16px;
+  }
+
+  .attachment-card {
+    width: 190px;
+    min-width: 190px;
   }
 }

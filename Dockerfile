@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt pyproject.toml README.md LICENSE /app/
+COPY requirements-runtime.txt pyproject.toml README.md LICENSE /app/
 COPY src /app/src
 COPY scripts /app/scripts
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir -r /app/requirements.txt && pip install --no-cache-dir -e /app
+RUN pip install --no-cache-dir -r /app/requirements-runtime.txt && pip install --no-cache-dir -e /app
 
 FROM python:3.11-slim AS runtime
 
@@ -30,7 +30,12 @@ WORKDIR /app
 RUN groupadd --system app && useradd --system --gid app --create-home app
 
 COPY --from=builder /opt/venv /opt/venv
-COPY --chown=app:app . /app
+COPY --chown=app:app pyproject.toml README.md LICENSE /app/
+COPY --chown=app:app src /app/src
+COPY --chown=app:app scripts /app/scripts
+COPY --chown=app:app prompts /app/prompts
+COPY --chown=app:app configs /app/configs
+COPY --chown=app:app data/README.md /app/data/README.md
 
 USER app
 

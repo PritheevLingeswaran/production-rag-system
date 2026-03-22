@@ -78,6 +78,10 @@ class FakePersistentVectorStore(VectorStore):
         return cls(settings)
 
 
+def _build_fake_vector_store(settings: Any) -> FakePersistentVectorStore:
+    return FakePersistentVectorStore(settings)
+
+
 def test_upload_index_and_query_flow(tmp_path: Path, monkeypatch: Any) -> None:
     config_dir = tmp_path / "configs"
     config_dir.mkdir()
@@ -137,6 +141,8 @@ def test_upload_index_and_query_flow(tmp_path: Path, monkeypatch: Any) -> None:
         return FakePersistentVectorStore(settings)
 
     monkeypatch.setattr("services.document_service.build_vector_store", fake_build_vector_store)
+    monkeypatch.setattr("retrieval.vector_store.build_vector_store", fake_build_vector_store)
+    monkeypatch.setattr("api.deps.build_vector_store", fake_build_vector_store)
 
     app = create_app()
     client = TestClient(app)
@@ -171,3 +177,115 @@ def test_upload_index_and_query_flow(tmp_path: Path, monkeypatch: Any) -> None:
     assert payload["refusal"]["is_refusal"] is False
     assert payload["answer"].startswith("3")
     assert payload["citations"]
+
+
+def test_exact_match_and_keyword_queries_succeed(tmp_path: Path, monkeypatch: Any) -> None:
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    raw_dir = tmp_path / "data" / "raw" / "documents"
+    processed_dir = tmp_path / "data" / "processed"
+    base_config = {
+        "app": {"name": "rag-smart-qa", "environment": "test"},
+        "paths": {
+            "raw_dir": str(raw_dir),
+            "uploads_dir": str(raw_dir / "uploads"),
+            "processed_dir": str(processed_dir),
+            "chunks_dir": str(processed_dir / "chunks"),
+            "metadata_dir": str(processed_dir / "metadata"),
+            "indexes_dir": str(processed_dir / "indexes"),
+            "app_db_path": str(processed_dir / "metadata" / "app.db"),
+        },
+        "embeddings": {
+            "provider": "sentence_transformers",
+            "model": "fake-local",
+            "sentence_transformers": {"model_name": "fake-local", "local_files_only": True},
+        },
+        "vector_store": {"provider": "pinecone", "top_k": 8},
+        "retrieval": {
+            "query_rewrite": {"enabled": False, "model": "gpt-4o-mini"},
+            "hybrid": {
+                "enabled": True,
+                "fusion_method": "rrf",
+                "bm25_k": 10,
+                "dense_k": 10,
+                "rrf_k": 30,
+            },
+            "cache": {"enabled": True, "max_entries": 32},
+            "rerank": {"enabled": False, "provider": "lexical"},
+            "min_score": 0.0,
+            "refuse_if_top_score_below": 0.0,
+            "refuse_if_top_gap_below": 0.0,
+        },
+        "summaries": {"enabled": True, "max_context_chars": 2000, "max_points": 3},
+        "auth": {"enabled": False, "provider": "none", "demo_user_id": "local-user"},
+    }
+    (config_dir / "base.yaml").write_text(yaml.safe_dump(base_config), encoding="utf-8")
+    (config_dir / "dev.yaml").write_text("{}", encoding="utf-8")
+
+    monkeypatch.setenv("RAG_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("RAG_ENV", "dev")
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("RAG_SKIP_STARTUP_VALIDATION", "1")
+    monkeypatch.setattr(
+        "retrieval.retriever.build_embeddings_backend", lambda settings: FakeEmbeddingsBackend()
+    )
+    monkeypatch.setattr(
+        "services.document_service.build_embeddings_backend",
+        lambda settings: FakeEmbeddingsBackend(),
+    )
+    monkeypatch.setattr(
+        "services.document_service.build_vector_store",
+        _build_fake_vector_store,
+    )
+    monkeypatch.setattr("retrieval.vector_store.build_vector_store", _build_fake_vector_store)
+    monkeypatch.setattr("api.deps.build_vector_store", _build_fake_vector_store)
+
+    app = create_app()
+    client = TestClient(app)
+
+    document_text = (
+        "Semester 3 subjects are Mathematics, Physics, Chemistry, and English. "
+        "There are 4 subjects in total."
+    )
+
+    upload = client.post(
+        "/api/v1/documents/upload",
+        files=[("files", ("semester.txt", io.BytesIO(document_text.encode("utf-8")), "text/plain"))],
+    )
+    assert upload.status_code == 200
+
+    exact_match = client.post(
+        "/api/v1/chat/query",
+        json={
+            "question": "Semester 3 subjects are Mathematics, Physics, Chemistry, and English.",
+            "retrieval_mode": "hybrid_rrf",
+            "top_k": 5,
+        },
+    )
+    assert exact_match.status_code == 200
+    exact_payload = exact_match.json()
+    assert exact_payload["refusal"]["is_refusal"] is False
+    assert "Mathematics" in exact_payload["answer"]
+
+    keyword_retrieval = client.post(
+        "/retrieve/hybrid",
+        json={"query": "Physics", "top_k": 5, "rewrite_query": False},
+    )
+    assert keyword_retrieval.status_code == 200
+    retrieval_payload = keyword_retrieval.json()
+    assert retrieval_payload["num_hits"] > 0
+    assert "Physics" in retrieval_payload["hits"][0]["snippet"]
+
+    qa_query = client.post(
+        "/api/v1/chat/query",
+        json={
+            "question": "How many subjects are there?",
+            "retrieval_mode": "hybrid_rrf",
+            "top_k": 5,
+        },
+    )
+    assert qa_query.status_code == 200
+    qa_payload = qa_query.json()
+    assert qa_payload["refusal"]["is_refusal"] is False
+    assert qa_payload["citations"]
+    assert "4" in qa_payload["answer"]

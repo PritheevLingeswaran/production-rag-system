@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import ChatPanel from "./components/ChatPanel/ChatPanel";
 import DocumentsView from "./components/DocumentsView/DocumentsView";
 import SettingsView from "./components/SettingsView/SettingsView";
+import AuthView from "./components/AuthView/AuthView";
 import type { View } from "./types";
 import "./App.css";
 
@@ -11,6 +12,7 @@ export default function App() {
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessionsVersion, setSessionsVersion] = useState(0);
+  const [documentsVersion, setDocumentsVersion] = useState(0);
 
   return (
     <div className="app">
@@ -52,10 +54,25 @@ export default function App() {
               setSessionId(id);
               setSessionsVersion((current) => current + 1);
             }}
+            onDocumentsChanged={() => {
+              setDocumentsVersion((current) => current + 1);
+            }}
           />
         )}
-        {view === "documents" && <DocumentsView />}
+        {view === "documents" && <DocumentsView refreshKey={documentsVersion} />}
         {view === "settings" && <SettingsView />}
+        {view === "login" && (
+          <AuthView
+            mode="login"
+            onModeChange={(mode) => setView(mode)}
+          />
+        )}
+        {view === "signup" && (
+          <AuthView
+            mode="signup"
+            onModeChange={(mode) => setView(mode)}
+          />
+        )}
       </main>
     </div>
   );

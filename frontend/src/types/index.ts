@@ -119,4 +119,4 @@ export interface QueryResponse {
   };
 }
 
-export type View = "chat" | "documents" | "settings";
+export type View = "chat" | "documents" | "settings" | "login" | "signup";
