@@ -7,6 +7,7 @@ __pycache__/
 htmlcov/
 .env
 .venv/
+.ci-venv/
 venv/
 .DS_Store
 data/processed/
@@ -18,3 +19,7 @@ data/processed/
 /package-lock.json
 web/.next/
 web/node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
