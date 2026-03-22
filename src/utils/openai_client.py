@@ -42,7 +42,7 @@ class OpenAIClient:
         max_retries: int = 3,
     ) -> None:
         normalized_api_key = api_key or None
-        normalized_base_url = base_url or None
+        normalized_base_url = (base_url or "").strip() or "https://api.openai.com/v1"
         normalized_org = organization or None
         self._client = OpenAI(
             api_key=normalized_api_key,

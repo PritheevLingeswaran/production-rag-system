@@ -79,12 +79,19 @@ def _failing_answerer() -> FailingAnswerer:
     return FailingAnswerer()
 
 
-def test_query_endpoint() -> None:
+def _create_test_client(
+    *,
+    retriever_factory: Callable[[], object] = _dummy_retriever,
+    answerer_factory: Callable[[], object] = _dummy_answerer,
+) -> TestClient:
     app = create_app()
-    app.dependency_overrides[deps.get_retriever] = _dummy_retriever
-    app.dependency_overrides[deps.get_answerer] = _dummy_answerer
+    app.dependency_overrides[deps.get_retriever] = retriever_factory
+    app.dependency_overrides[deps.get_answerer] = answerer_factory
+    return TestClient(app)
 
-    client = TestClient(app)
+
+def test_query_endpoint() -> None:
+    client = _create_test_client()
     r = client.post("/api/v1/query", json={"query": "warranty?", "top_k": 3})
     assert r.status_code == 200
     assert "x-request-id" in r.headers
@@ -96,11 +103,7 @@ def test_query_endpoint() -> None:
 
 
 def test_query_endpoint_generation_failure_returns_refusal() -> None:
-    app = create_app()
-    app.dependency_overrides[deps.get_retriever] = _dummy_retriever
-    app.dependency_overrides[deps.get_answerer] = _failing_answerer
-
-    client = TestClient(app)
+    client = _create_test_client(answerer_factory=_failing_answerer)
     r = client.post("/api/v1/query", json={"query": "warranty?", "top_k": 3})
     assert r.status_code == 200
     j = r.json()
@@ -110,10 +113,7 @@ def test_query_endpoint_generation_failure_returns_refusal() -> None:
 
 
 def test_metrics_endpoint_exposes_grounding_and_refusal_metrics() -> None:
-    app = create_app()
-    app.dependency_overrides[deps.get_retriever] = _dummy_retriever
-    app.dependency_overrides[deps.get_answerer] = _dummy_answerer
-    client = TestClient(app)
+    client = _create_test_client()
 
     _ = client.post("/api/v1/query", json={"query": "warranty?", "top_k": 3})
     mr = client.get("/api/v1/metrics")
@@ -128,8 +128,7 @@ def test_metrics_endpoint_exposes_grounding_and_refusal_metrics() -> None:
 
 
 def test_validation_errors_use_structured_error_response() -> None:
-    app = create_app()
-    client = TestClient(app)
+    client = _create_test_client()
 
     response = client.post("/api/v1/query", json={"query": "", "top_k": 0})
     assert response.status_code == 422
@@ -140,8 +139,7 @@ def test_validation_errors_use_structured_error_response() -> None:
 
 
 def test_validation_rejects_whitespace_only_query() -> None:
-    app = create_app()
-    client = TestClient(app)
+    client = _create_test_client()
 
     response = client.post("/api/v1/query", json={"query": "   ", "top_k": 2})
     assert response.status_code == 422
@@ -151,15 +149,12 @@ def test_validation_rejects_whitespace_only_query() -> None:
 def test_query_endpoint_retrieval_timeout_returns_refusal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    app = create_app()
-    app.dependency_overrides[deps.get_retriever] = _dummy_retriever
-    app.dependency_overrides[deps.get_answerer] = _dummy_answerer
     monkeypatch.setattr(
         "api.routes.legacy.run_with_timeout",
         lambda stage, timeout_s, fn: (_ for _ in ()).throw(StageTimeoutError(stage, timeout_s)),
     )
 
-    client = TestClient(app)
+    client = _create_test_client()
     response = client.post("/api/v1/query", json={"query": "warranty?", "top_k": 3})
     assert response.status_code == 200
     payload = response.json()
@@ -170,10 +165,6 @@ def test_query_endpoint_retrieval_timeout_returns_refusal(
 def test_query_endpoint_generation_timeout_returns_refusal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    app = create_app()
-    app.dependency_overrides[deps.get_retriever] = _dummy_retriever
-    app.dependency_overrides[deps.get_answerer] = _dummy_answerer
-
     def _timeout_generation(
         stage: str,
         timeout_s: float,
@@ -185,7 +176,7 @@ def test_query_endpoint_generation_timeout_returns_refusal(
 
     monkeypatch.setattr("api.routes.legacy.run_with_timeout", _timeout_generation)
 
-    client = TestClient(app)
+    client = _create_test_client()
     response = client.post("/api/v1/query", json={"query": "warranty?", "top_k": 3})
     assert response.status_code == 200
     payload = response.json()

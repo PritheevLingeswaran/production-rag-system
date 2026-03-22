@@ -49,6 +49,20 @@ def _estimate_llm_cost(
     ) * float(pricing.output_usd_per_1k_tokens)
 
 
+def _should_disable_remote_generation(settings: Settings) -> bool:
+    oai = settings.embeddings.openai
+    api_key = (oai.api_key or "").strip()
+    base_url = (oai.base_url or "").strip().lower()
+
+    if not api_key:
+        return True
+
+    # Keep tests and offline/local stub setups deterministic.
+    if api_key.lower() in {"test", "dummy", "changeme"}:
+        return True
+    return "localhost:9999" in base_url
+
+
 def _build_context(hits: list[SearchHit], max_chars: int = 16000) -> str:
     parts: list[str] = []
     used = 0
@@ -380,9 +394,7 @@ class Answerer:
         self.system = load_prompt("prompts/system_instructions.txt")
         self.template = load_prompt("prompts/answer_with_citations.txt")
         self.refusal_policy = load_prompt("prompts/refusal_policy.txt")
-        self._disable_remote_generation = (
-            self.settings.app.environment == "dev" or not bool(oai.api_key)
-        )
+        self._disable_remote_generation = _should_disable_remote_generation(self.settings)
 
     def generate(self, question: str, hits: list[SearchHit]) -> GenerationOutput:
         log.info("generation.started", question_chars=len(question), hits=len(hits))

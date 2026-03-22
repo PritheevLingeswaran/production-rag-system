@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from generation.answerer import Answerer
+from generation.answerer import Answerer, _should_disable_remote_generation
 from retrieval.bm25 import BM25TextNormalizer
 from retrieval.vector_store import IndexedChunk, SearchHit
 from utils.settings import Settings
@@ -146,3 +146,18 @@ def test_answerer_extracts_education_from_spaced_resume_text() -> None:
     )
     assert out.refusal.is_refusal is False
     assert "computer science engineering" in out.answer.lower()
+
+
+def test_remote_generation_stays_disabled_for_offline_test_config() -> None:
+    settings = Settings()
+    settings.embeddings.openai.api_key = "test"
+    settings.embeddings.openai.base_url = "http://localhost:9999/v1"
+    assert _should_disable_remote_generation(settings) is True
+
+
+def test_remote_generation_is_allowed_in_dev_with_real_api_key() -> None:
+    settings = Settings()
+    settings.app.environment = "dev"
+    settings.embeddings.openai.api_key = "sk-real-key"
+    settings.embeddings.openai.base_url = None
+    assert _should_disable_remote_generation(settings) is False
